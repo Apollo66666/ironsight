@@ -121,6 +121,10 @@ pub enum Command {
     // -- Shot ack (empty payloads) --
     ShotDataAck,
     ShotResultReq,
+    /// Re-fetch a page of ball PRC points (0xEC).
+    PrcDataRequest(shot::PrcDataRequest),
+    /// Fetch a page of club-head PRC points (0xEE).
+    ClubPrcRequest(shot::ClubPrcRequest),
 }
 
 impl Command {
@@ -171,6 +175,8 @@ impl Command {
             Command::SensorAct(m) => (TYPE_SENSOR_ACT, m.encode()),
             Command::ShotDataAck => (TYPE_SHOT_DATA_ACK, vec![]),
             Command::ShotResultReq => (TYPE_SHOT_RESULT_REQ, vec![]),
+            Command::PrcDataRequest(m) => (TYPE_PRC_DATA, m.encode()),
+            Command::ClubPrcRequest(m) => (TYPE_CLUB_PRC, m.encode()),
         };
 
         RawFrame {

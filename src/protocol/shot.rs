@@ -738,6 +738,31 @@ impl PrcData {
     }
 }
 
+/// Request a page of ball PRC tracking points. Type 0xEC, APP → AVR.
+///
+/// Observed request payload: `[03, start_index_hi, start_index_lo, 08]`.
+/// Version 4 responses contain at most four 60-byte points per page, so the
+/// next request normally advances `start_index` by four.
+#[derive(Debug, Clone)]
+pub struct PrcDataRequest {
+    pub start_index: u16,
+}
+
+impl PrcDataRequest {
+    #[must_use]
+    pub fn new(start_index: u16) -> Self {
+        Self { start_index }
+    }
+
+    #[must_use]
+    pub fn encode(&self) -> Vec<u8> {
+        let mut buf = vec![0x03];
+        codec::write_uint16(&mut buf, self.start_index);
+        buf.push(0x08);
+        buf
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 0xEE — CLUB_PRC (76-byte sub-records, paginated)
 // ---------------------------------------------------------------------------
@@ -854,6 +879,27 @@ impl ClubPrc {
     }
 }
 
+/// Request a page of club-head PRC tracking points. Type 0xEE, APP → AVR.
+///
+/// Responses contain at most three 76-byte points, so callers normally
+/// advance `start_index` by three after each full page.
+#[derive(Debug, Clone)]
+pub struct ClubPrcRequest {
+    pub start_index: u16,
+}
+
+impl ClubPrcRequest {
+    #[must_use]
+    pub fn new(start_index: u16) -> Self {
+        Self { start_index }
+    }
+
+    #[must_use]
+    pub fn encode(&self) -> Vec<u8> {
+        ClubPrc::encode_request(self.start_index)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 0xE5 — SHOT_TEXT (variable)
 // ---------------------------------------------------------------------------
@@ -892,5 +938,26 @@ impl ShotText {
     /// Check if this is a "BALL TRIGGER" message.
     pub fn is_trigger(&self) -> bool {
         self.text.contains("BALL TRIGGER")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ClubPrcRequest, PrcDataRequest};
+
+    #[test]
+    fn prc_data_request_encoding() {
+        assert_eq!(
+            PrcDataRequest::new(0x0123).encode(),
+            vec![0x03, 0x01, 0x23, 0x08]
+        );
+    }
+
+    #[test]
+    fn club_prc_request_encoding() {
+        let encoded = ClubPrcRequest::new(0x0123).encode();
+        assert_eq!(encoded.len(), 77);
+        assert_eq!(&encoded[..3], &[0x4C, 0x01, 0x23]);
+        assert!(encoded[3..].iter().all(|byte| *byte == 0));
     }
 }

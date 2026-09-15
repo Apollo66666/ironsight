@@ -423,6 +423,19 @@ messages including keepalive — a reconnect is required to recover.
 Skip EC PRC re-fetch and EE CLUB_PRC fetch unless trajectory visualization is
 needed. The duplicate ED from 0x6D can be discarded.
 
+`BinaryClient` keeps this optional behavior disabled by default. A collector
+that needs every available raw ball/club radar point enables it before arming:
+
+```rust
+binary.set_prc_pagination_enabled(true);
+```
+
+The active flow requests 0xEC in pages of up to four points and 0xEE in pages
+of up to three points. Each page has a one-second timeout and each stream has a
+64-page safety limit. A missing duplicate ED causes an 0xEE page-zero probe;
+timeout or page-limit failures are reported in `ShotData.prc_fetch` and still
+allow the device to re-arm.
+
 ### 7.3 Timeouts
 
 | Situation | Recommended timeout |

@@ -230,6 +230,8 @@ pub struct BinaryClient<S: Read + Write> {
     /// When `shot_in_progress` was set. Used by the trigger watchdog to
     /// detect a missing PROCESSED and resume keepalives.
     trigger_time: Option<Instant>,
+    /// Re-fetch all 0xEC/0xEE pages during post-shot processing.
+    prc_pagination_enabled: bool,
 }
 
 impl<S: Read + Write> BinaryClient<S> {
@@ -259,7 +261,14 @@ impl<S: Read + Write> BinaryClient<S> {
             armed: false,
             shot_in_progress: false,
             trigger_time: None,
+            prc_pagination_enabled: false,
         }
+    }
+
+    /// Enable or disable active ball/club PRC page retrieval for subsequent
+    /// shots. Disabled by default to preserve the minimal re-arm sequence.
+    pub fn set_prc_pagination_enabled(&mut self, enabled: bool) {
+        self.prc_pagination_enabled = enabled;
     }
 
     /// Poll the client for the next event.
@@ -391,7 +400,8 @@ impl<S: Read + Write> BinaryClient<S> {
             }
             if st.is_processed() {
                 self.trigger_time = None;
-                let (seq, actions) = ShotSequencer::new();
+                let (seq, actions) =
+                    ShotSequencer::new_with_prc_pagination(self.prc_pagination_enabled);
                 for a in actions {
                     seq::send_action(&mut self.conn, a)?;
                 }

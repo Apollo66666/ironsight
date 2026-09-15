@@ -27,7 +27,8 @@ use crate::protocol::handshake::{
     ProdInfoReq, ProdInfoResp, TimeSync,
 };
 use crate::protocol::shot::{
-    ClubPrc, ClubResult, FlightResult, FlightResultV1, PrcData, SpeedProfile, SpinResult,
+    ClubPrc, ClubPrcRequest, ClubResult, FlightResult, FlightResultV1, PrcData, PrcDataRequest,
+    SpeedProfile, SpinResult,
 };
 use crate::protocol::status::{AvrStatus, DspStatus, PiStatus, StatusPoll};
 use crate::protocol::{Command, Message};
@@ -1297,6 +1298,26 @@ pub struct ShotData {
     pub prc: Vec<PrcData>,
     /// Club radar tracking points (0xEE), one per page.
     pub club_prc: Vec<ClubPrc>,
+    /// Active PRC pagination status for this shot.
+    pub prc_fetch: PrcFetchStatus,
+}
+
+/// Result of the optional active PRC/ClubPRC page retrieval.
+#[derive(Debug, Clone, Default)]
+pub struct PrcFetchStatus {
+    pub enabled: bool,
+    pub ball_complete: bool,
+    pub club_complete: bool,
+    pub ball_timed_out: bool,
+    pub club_timed_out: bool,
+    pub ball_page_limit_reached: bool,
+    pub club_page_limit_reached: bool,
+    pub ball_expected_points: usize,
+    pub club_expected_points: usize,
+    pub ball_pages_requested: u16,
+    pub ball_pages_received: u16,
+    pub club_pages_requested: u16,
+    pub club_pages_received: u16,
 }
 
 /// A piece of shot data yielded during the shot lifecycle, between
@@ -1324,6 +1345,8 @@ enum ShotStep {
     Draining,
     /// Waiting for ClubResult after ShotResultReq.
     WaitingForClubResult,
+    /// Actively fetching 0xEE pages after ClubResult or a fallback probe.
+    FetchingClubPrc,
     /// Waiting for ConfigAck after B0 ARM.
     WaitingForArmAck,
     /// Waiting for "ARMED" text.
@@ -1333,14 +1356,19 @@ enum ShotStep {
 
 /// Duration to wait for IDLE after receiving flight data during drain.
 /// If the device doesn't send IDLE within this window (firmware bug on
-/// some Gen1 Mevo+ units), proceed directly to ARM without the redundant
-/// ShotResultReq — ClubResult already arrives during the drain phase.
+/// some Gen1 Mevo+ units), skip the redundant ShotResultReq. Active pagination
+/// may still probe 0xEE before ARM.
 const DRAIN_TIMEOUT: Duration = Duration::from_secs(3);
+const PRC_PAGE_TIMEOUT: Duration = Duration::from_secs(1);
+const BALL_PRC_PAGE_SIZE: usize = 4;
+const CLUB_PRC_PAGE_SIZE: usize = 3;
+const MAX_BALL_PRC_PAGES: u16 = 64;
+const MAX_CLUB_PRC_PAGES: u16 = 64;
 
 /// Pollable state machine for post-shot handling.
 ///
-/// Created after receiving E5 "PROCESSED". Drives: ack → drain to IDLE →
-/// ShotResultReq → ARM → wait ARMED.
+/// Created after receiving E5 "PROCESSED". Drives: ack → optional 0xEC pages →
+/// drain to IDLE → ShotResultReq → optional 0xEE pages → ARM → wait ARMED.
 ///
 /// The drain phase collects shot data (D4/ED/EF/etc.) and passively absorbs
 /// ModeAck (0xB1) and ConfigResp (0xA0) messages that arrive as part of the
@@ -1355,24 +1383,62 @@ pub struct ShotSequencer {
     /// when D4/ED/EF arrive; taken by `BinaryClient` after each `feed()`.
     pending: Option<ShotDatum>,
     /// Deadline for drain phase. Set when FlightResult (D4) arrives.
-    /// If IDLE hasn't arrived by this time, skip directly to ARM.
+    /// If IDLE hasn't arrived by this time, skip the optional result request.
     drain_deadline: Option<Instant>,
+    /// Whether the optional active 0xEC/0xEE re-fetch is enabled.
+    prc_pagination_enabled: bool,
+    /// Whether IDLE arrived while a ball PRC page was still pending.
+    idle_seen: bool,
+    ball_fetch_active: bool,
+    ball_requested_start: u16,
+    ball_points_fetched: usize,
+    club_requested_start: u16,
+    club_points_fetched: usize,
+    page_deadline: Option<Instant>,
 }
 
 impl ShotSequencer {
     /// Create a new shot sequencer. Returns initial actions (ShotDataAck ×2).
     #[must_use]
     pub fn new() -> (Self, Vec<Action>) {
+        Self::new_with_prc_pagination(false)
+    }
+
+    /// Create a shot sequencer and optionally re-fetch every ball/club PRC
+    /// page before re-arming. Existing callers retain the passive behavior by
+    /// using [`Self::new`].
+    #[must_use]
+    pub fn new_with_prc_pagination(enabled: bool) -> (Self, Vec<Action>) {
+        let mut data = ShotData::default();
+        data.prc_fetch.enabled = enabled;
         let seq = Self {
             step: ShotStep::Draining,
-            data: ShotData::default(),
+            data,
             pending: None,
             drain_deadline: None,
+            prc_pagination_enabled: enabled,
+            idle_seen: false,
+            ball_fetch_active: enabled,
+            ball_requested_start: 0,
+            ball_points_fetched: 0,
+            club_requested_start: 0,
+            club_points_fetched: 0,
+            page_deadline: enabled.then(|| Instant::now() + PRC_PAGE_TIMEOUT),
         };
-        let actions = vec![
+        let mut actions = vec![
             Action::Send(Command::ShotDataAck, BusAddr::Avr),
             Action::Send(Command::ShotDataAck, BusAddr::Avr),
         ];
+        if enabled {
+            actions.push(Action::Send(
+                Command::PrcDataRequest(PrcDataRequest::new(0)),
+                BusAddr::Avr,
+            ));
+        }
+        let mut seq = seq;
+        if enabled {
+            seq.data.prc_fetch.ball_pages_requested = 1;
+        }
         (seq, actions)
     }
 
@@ -1394,25 +1460,87 @@ impl ShotSequencer {
         self.pending.take()
     }
 
-    /// Check if the drain phase has timed out waiting for IDLE.
+    fn request_club_result(&mut self) -> Vec<Action> {
+        self.step = ShotStep::WaitingForClubResult;
+        self.page_deadline = self
+            .prc_pagination_enabled
+            .then(|| Instant::now() + PRC_PAGE_TIMEOUT);
+        vec![Action::Send(Command::ShotResultReq, BusAddr::Avr)]
+    }
+
+    fn start_club_prc_fetch(&mut self) -> Vec<Action> {
+        self.step = ShotStep::FetchingClubPrc;
+        self.club_requested_start = 0;
+        self.club_points_fetched = 0;
+        self.data.prc_fetch.club_pages_requested = 1;
+        self.page_deadline = Some(Instant::now() + PRC_PAGE_TIMEOUT);
+        vec![Action::Send(
+            Command::ClubPrcRequest(ClubPrcRequest::new(0)),
+            BusAddr::Avr,
+        )]
+    }
+
+    fn start_rearm(&mut self) -> Vec<Action> {
+        self.page_deadline = None;
+        self.step = ShotStep::WaitingForArmAck;
+        vec![Action::Send(
+            Command::AvrConfigCmd(AvrConfigCmd { arm: true }),
+            BusAddr::Avr,
+        )]
+    }
+
+    /// Check optional PRC page timeouts and the drain timeout.
     ///
     /// Some Gen1 Mevo+ firmware intermittently omits the IDLE message
     /// after shot processing, leaving the sequencer stuck in Draining.
-    /// When the drain deadline expires, skip the redundant ShotResultReq
-    /// (ClubResult already accumulated during drain) and proceed directly
-    /// to ARM.
+    /// When the drain deadline expires, skip the redundant ShotResultReq.
+    /// With active pagination enabled, probe Club PRC page zero before ARM;
+    /// otherwise preserve the original direct-to-ARM fallback.
     pub fn check_drain_timeout(&mut self) -> Vec<Action> {
-        if !matches!(self.step, ShotStep::Draining) {
+        if matches!(self.step, ShotStep::Draining)
+            && self.ball_fetch_active
+            && self
+                .page_deadline
+                .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            self.ball_fetch_active = false;
+            self.page_deadline = None;
+            self.data.prc_fetch.ball_timed_out = true;
+            if self.idle_seen {
+                return self.request_club_result();
+            }
+            return vec![];
+        }
+        if matches!(self.step, ShotStep::WaitingForClubResult)
+            && self
+                .page_deadline
+                .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            // ShotResultReq is best-effort. If the duplicate ClubResult is
+            // missing, still probe 0xEE page zero before re-arming.
+            return self.start_club_prc_fetch();
+        }
+        if matches!(self.step, ShotStep::FetchingClubPrc)
+            && self
+                .page_deadline
+                .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            self.page_deadline = None;
+            self.data.prc_fetch.club_timed_out = true;
+            return self.start_rearm();
+        }
+        if !matches!(self.step, ShotStep::Draining) || self.ball_fetch_active {
             return vec![];
         }
         if let Some(deadline) = self.drain_deadline
             && Instant::now() >= deadline
         {
-            self.step = ShotStep::WaitingForArmAck;
-            return vec![Action::Send(
-                Command::AvrConfigCmd(AvrConfigCmd { arm: true }),
-                BusAddr::Avr,
-            )];
+            if self.prc_pagination_enabled {
+                // IDLE is missing on some firmware. Club PRC is independent
+                // of IDLE, so probe page zero instead of abandoning the fetch.
+                return self.start_club_prc_fetch();
+            }
+            return self.start_rearm();
         }
         vec![]
     }
@@ -1420,48 +1548,125 @@ impl ShotSequencer {
 
 impl Sequence for ShotSequencer {
     fn feed(&mut self, env: &Envelope) -> Vec<Action> {
+        // Keep all shot data regardless of the current pagination/re-arm step.
+        // Firmware messages can arrive late and interleave with requested pages.
+        match &env.message {
+            Message::FlightResult(result) => {
+                self.data.flight = Some(result.clone());
+                self.pending = Some(ShotDatum::Flight(result.clone()));
+                if self.drain_deadline.is_none() {
+                    self.drain_deadline = Some(Instant::now() + DRAIN_TIMEOUT);
+                }
+            }
+            Message::ClubResult(result) => {
+                self.data.club = Some(result.clone());
+                self.pending = Some(ShotDatum::Club(result.clone()));
+                self.data.prc_fetch.club_expected_points = usize::from(result.num_club_prc_points);
+            }
+            Message::SpinResult(result) => {
+                self.data.spin = Some(result.clone());
+                self.pending = Some(ShotDatum::Spin(result.clone()));
+            }
+            Message::SpeedProfile(result) => self.data.speed_profile = Some(result.clone()),
+            Message::PrcData(result) => self.data.prc.push(result.clone()),
+            Message::ClubPrc(result) => self.data.club_prc.push(result.clone()),
+            Message::TrackingStatus(status) => {
+                self.data.prc_fetch.ball_expected_points = self
+                    .data
+                    .prc_fetch
+                    .ball_expected_points
+                    .max(usize::from(status.prc_tracking_count));
+            }
+            _ => {}
+        }
+
         match self.step {
             ShotStep::Draining => {
                 match &env.message {
                     Message::ShotText(st) if st.is_idle() => {
-                        // After IDLE, go straight to requesting final results.
-                        // Gen1 FS Golf sends 0x21 ConfigQuery here and waits
-                        // for B1 ModeAck + A0 ConfigResp before proceeding,
-                        // but Gen2 firmware skips that exchange entirely. The
-                        // ConfigQuery is informational (re-reads radar params
-                        // we already have) and not required for re-arming.
-                        // ModeAck arrives naturally during the device's
-                        // shot-completion flow and is absorbed passively.
-                        self.step = ShotStep::WaitingForClubResult;
-                        return vec![Action::Send(Command::ShotResultReq, BusAddr::Avr)];
-                    }
-                    Message::FlightResult(r) => {
-                        self.data.flight = Some(r.clone());
-                        self.pending = Some(ShotDatum::Flight(r.clone()));
-                        if self.drain_deadline.is_none() {
-                            self.drain_deadline = Some(Instant::now() + DRAIN_TIMEOUT);
+                        self.idle_seen = true;
+                        if !self.ball_fetch_active {
+                            return self.request_club_result();
                         }
                     }
-                    Message::ClubResult(r) => {
-                        self.data.club = Some(r.clone());
-                        self.pending = Some(ShotDatum::Club(r.clone()));
+                    Message::PrcData(page) if self.ball_fetch_active => {
+                        if page.sequence >= 0 && page.sequence as u16 == self.ball_requested_start {
+                            self.data.prc_fetch.ball_pages_received += 1;
+                            self.ball_points_fetched += page.points.len();
+                            let reached_expected = self.data.prc_fetch.ball_expected_points > 0
+                                && self.ball_points_fetched
+                                    >= self.data.prc_fetch.ball_expected_points;
+                            let short_page = page.points.len() < BALL_PRC_PAGE_SIZE;
+                            if reached_expected || short_page {
+                                self.ball_fetch_active = false;
+                                self.page_deadline = None;
+                                self.data.prc_fetch.ball_complete = true;
+                                if self.idle_seen {
+                                    return self.request_club_result();
+                                }
+                            } else if self.data.prc_fetch.ball_pages_requested >= MAX_BALL_PRC_PAGES
+                            {
+                                self.ball_fetch_active = false;
+                                self.page_deadline = None;
+                                self.data.prc_fetch.ball_page_limit_reached = true;
+                                if self.idle_seen {
+                                    return self.request_club_result();
+                                }
+                            } else {
+                                self.ball_requested_start = self
+                                    .ball_requested_start
+                                    .saturating_add(page.points.len() as u16);
+                                self.data.prc_fetch.ball_pages_requested += 1;
+                                self.page_deadline = Some(Instant::now() + PRC_PAGE_TIMEOUT);
+                                return vec![Action::Send(
+                                    Command::PrcDataRequest(PrcDataRequest::new(
+                                        self.ball_requested_start,
+                                    )),
+                                    BusAddr::Avr,
+                                )];
+                            }
+                        }
                     }
-                    Message::SpinResult(r) => {
-                        self.data.spin = Some(r.clone());
-                        self.pending = Some(ShotDatum::Spin(r.clone()));
-                    }
-                    Message::SpeedProfile(r) => self.data.speed_profile = Some(r.clone()),
-                    Message::PrcData(r) => self.data.prc.push(r.clone()),
-                    Message::ClubPrc(r) => self.data.club_prc.push(r.clone()),
                     _ => {}
                 }
                 vec![]
             }
             ShotStep::WaitingForClubResult => {
-                if let Message::ClubResult(_) = env.message {
-                    self.step = ShotStep::WaitingForArmAck;
+                if let Message::ClubResult(result) = &env.message {
+                    if self.prc_pagination_enabled && result.num_club_prc_points > 0 {
+                        return self.start_club_prc_fetch();
+                    }
+                    if self.prc_pagination_enabled {
+                        self.data.prc_fetch.club_complete = true;
+                    }
+                    return self.start_rearm();
+                }
+                vec![]
+            }
+            ShotStep::FetchingClubPrc => {
+                if let Message::ClubPrc(page) = &env.message {
+                    self.data.prc_fetch.club_pages_received += 1;
+                    self.club_points_fetched += page.points.len();
+                    let reached_expected = self.data.prc_fetch.club_expected_points > 0
+                        && self.club_points_fetched >= self.data.prc_fetch.club_expected_points;
+                    let short_page = page.points.len() < CLUB_PRC_PAGE_SIZE;
+                    if reached_expected || short_page {
+                        self.page_deadline = None;
+                        self.data.prc_fetch.club_complete = true;
+                        return self.start_rearm();
+                    }
+                    if self.data.prc_fetch.club_pages_requested >= MAX_CLUB_PRC_PAGES {
+                        self.page_deadline = None;
+                        self.data.prc_fetch.club_page_limit_reached = true;
+                        return self.start_rearm();
+                    }
+                    self.club_requested_start = self
+                        .club_requested_start
+                        .saturating_add(CLUB_PRC_PAGE_SIZE as u16);
+                    self.data.prc_fetch.club_pages_requested += 1;
+                    self.page_deadline = Some(Instant::now() + PRC_PAGE_TIMEOUT);
                     return vec![Action::Send(
-                        Command::AvrConfigCmd(AvrConfigCmd { arm: true }),
+                        Command::ClubPrcRequest(ClubPrcRequest::new(self.club_requested_start)),
                         BusAddr::Avr,
                     )];
                 }
@@ -1701,4 +1906,192 @@ pub fn complete_shot(conn: &mut Connection, log: impl Fn(&str)) -> Result<ShotDa
     drive(conn, &mut seq, actions, deadline)?;
     log("RE-ARMED");
     Ok(seq.into_result())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::protocol::shot::{ShotText, TrackingStatus};
+
+    fn envelope(type_id: u8, message: Message) -> Envelope {
+        Envelope {
+            src: BusAddr::Avr,
+            type_id,
+            raw: Vec::new(),
+            message,
+        }
+    }
+
+    fn ball_page(sequence: i16, count: u8) -> PrcData {
+        let mut payload = vec![0u8; 4 + usize::from(count) * 60];
+        payload[0] = 3 + count * 60;
+        payload[1..3].copy_from_slice(&sequence.to_be_bytes());
+        payload[3] = count;
+        PrcData::decode(&payload).unwrap()
+    }
+
+    fn club_page(count: u8) -> ClubPrc {
+        let mut payload = vec![0u8; 1 + usize::from(count) * 76];
+        payload[0] = count * 76;
+        ClubPrc::decode(&payload).unwrap()
+    }
+
+    fn club_result(point_count: u8) -> ClubResult {
+        let mut payload = vec![0u8; 167];
+        payload[1] = point_count;
+        ClubResult::decode(&payload).unwrap()
+    }
+
+    fn tracking_status(point_count: u8) -> TrackingStatus {
+        let mut payload = vec![0u8; 82];
+        payload[54] = point_count;
+        TrackingStatus::decode(&payload).unwrap()
+    }
+
+    #[test]
+    fn active_prc_pagination_requests_ball_then_club_pages() {
+        let (mut sequencer, actions) = ShotSequencer::new_with_prc_pagination(true);
+        assert_eq!(actions.len(), 3);
+        let Action::Send(command, destination) = &actions[2];
+        assert_eq!(*destination, BusAddr::Avr);
+        let frame = command.encode(*destination);
+        assert_eq!(frame.type_id, crate::protocol::TYPE_PRC_DATA);
+        assert_eq!(frame.payload, vec![0x03, 0x00, 0x00, 0x08]);
+
+        let idle = envelope(
+            crate::protocol::TYPE_SHOT_TEXT,
+            Message::ShotText(ShotText {
+                text: "IDLE".to_owned(),
+            }),
+        );
+        assert!(sequencer.feed(&idle).is_empty());
+
+        let page0 = envelope(
+            crate::protocol::TYPE_PRC_DATA,
+            Message::PrcData(ball_page(0, 4)),
+        );
+        let actions = sequencer.feed(&page0);
+        let Action::Send(command, destination) = &actions[0];
+        assert_eq!(
+            command.encode(*destination).payload,
+            vec![0x03, 0x00, 0x04, 0x08]
+        );
+
+        let final_ball_page = envelope(
+            crate::protocol::TYPE_PRC_DATA,
+            Message::PrcData(ball_page(4, 1)),
+        );
+        let actions = sequencer.feed(&final_ball_page);
+        assert!(matches!(
+            actions[0],
+            Action::Send(Command::ShotResultReq, _)
+        ));
+        assert!(sequencer.data().prc_fetch.ball_complete);
+
+        let club = envelope(
+            crate::protocol::TYPE_CLUB_RESULT,
+            Message::ClubResult(club_result(4)),
+        );
+        let actions = sequencer.feed(&club);
+        let Action::Send(command, destination) = &actions[0];
+        let frame = command.encode(*destination);
+        assert_eq!(frame.type_id, crate::protocol::TYPE_CLUB_PRC);
+        assert_eq!(frame.payload.len(), 77);
+        assert_eq!(&frame.payload[..3], &[0x4C, 0x00, 0x00]);
+
+        let club0 = envelope(
+            crate::protocol::TYPE_CLUB_PRC,
+            Message::ClubPrc(club_page(3)),
+        );
+        let actions = sequencer.feed(&club0);
+        let Action::Send(command, destination) = &actions[0];
+        let frame = command.encode(*destination);
+        assert_eq!(frame.type_id, crate::protocol::TYPE_CLUB_PRC);
+        assert_eq!(&frame.payload[..3], &[0x4C, 0x00, 0x03]);
+
+        let final_club_page = envelope(
+            crate::protocol::TYPE_CLUB_PRC,
+            Message::ClubPrc(club_page(1)),
+        );
+        let actions = sequencer.feed(&final_club_page);
+        assert!(matches!(
+            actions[0],
+            Action::Send(Command::AvrConfigCmd(_), BusAddr::Avr)
+        ));
+        assert!(sequencer.data().prc_fetch.club_complete);
+        assert_eq!(sequencer.data().prc_fetch.ball_pages_requested, 2);
+        assert_eq!(sequencer.data().prc_fetch.club_pages_requested, 2);
+    }
+
+    #[test]
+    fn passive_shot_sequence_does_not_request_prc_pages() {
+        let (sequencer, actions) = ShotSequencer::new();
+        assert_eq!(actions.len(), 2);
+        assert!(!sequencer.data().prc_fetch.enabled);
+    }
+
+    #[test]
+    fn expected_ball_point_count_ends_on_an_exact_full_page() {
+        let (mut sequencer, _) = ShotSequencer::new_with_prc_pagination(true);
+        let status = envelope(
+            crate::protocol::TYPE_TRACKING_STATUS,
+            Message::TrackingStatus(tracking_status(4)),
+        );
+        assert!(sequencer.feed(&status).is_empty());
+
+        let page = envelope(
+            crate::protocol::TYPE_PRC_DATA,
+            Message::PrcData(ball_page(0, 4)),
+        );
+        assert!(sequencer.feed(&page).is_empty());
+        assert!(sequencer.data().prc_fetch.ball_complete);
+        assert_eq!(sequencer.data().prc_fetch.ball_pages_requested, 1);
+        assert_eq!(sequencer.data().prc_fetch.ball_pages_received, 1);
+    }
+
+    #[test]
+    fn missing_duplicate_club_result_still_probes_club_prc() {
+        let (mut sequencer, _) = ShotSequencer::new_with_prc_pagination(true);
+        sequencer.idle_seen = true;
+        sequencer.ball_fetch_active = false;
+        let actions = sequencer.request_club_result();
+        assert!(matches!(
+            actions[0],
+            Action::Send(Command::ShotResultReq, _)
+        ));
+
+        sequencer.page_deadline = Some(Instant::now() - Duration::from_millis(1));
+        let actions = sequencer.check_drain_timeout();
+        let Action::Send(command, destination) = &actions[0];
+        let frame = command.encode(*destination);
+        assert_eq!(frame.type_id, crate::protocol::TYPE_CLUB_PRC);
+        assert_eq!(&frame.payload[..3], &[0x4C, 0x00, 0x00]);
+    }
+
+    #[test]
+    fn missing_idle_still_probes_club_prc_when_pagination_is_enabled() {
+        let (mut sequencer, _) = ShotSequencer::new_with_prc_pagination(true);
+        sequencer.ball_fetch_active = false;
+        sequencer.drain_deadline = Some(Instant::now() - Duration::from_millis(1));
+
+        let actions = sequencer.check_drain_timeout();
+        let Action::Send(command, destination) = &actions[0];
+        let frame = command.encode(*destination);
+        assert_eq!(frame.type_id, crate::protocol::TYPE_CLUB_PRC);
+        assert_eq!(&frame.payload[..3], &[0x4C, 0x00, 0x00]);
+    }
+
+    #[test]
+    fn club_prc_timeout_rearms_instead_of_failing_the_shot() {
+        let (mut sequencer, _) = ShotSequencer::new_with_prc_pagination(true);
+        let _ = sequencer.start_club_prc_fetch();
+        sequencer.page_deadline = Some(Instant::now() - Duration::from_millis(1));
+
+        let actions = sequencer.check_drain_timeout();
+        assert!(matches!(
+            actions[0],
+            Action::Send(Command::AvrConfigCmd(_), BusAddr::Avr)
+        ));
+        assert!(sequencer.data().prc_fetch.club_timed_out);
+    }
 }
