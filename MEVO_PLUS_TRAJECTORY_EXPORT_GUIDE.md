@@ -8,6 +8,8 @@
 
 WSL2 Ubuntu 只作为备选运行方式，单独见 [`WSL_UBUNTU_ALTERNATIVE.md`](WSL_UBUNTU_ALTERNATIVE.md)。
 
+零基础首次使用建议按 **第 4 节安装 → 第 5 节连接设备 → 第 9 节采集 → 第 10 节检查结果** 的顺序操作。第 6、7 节是出现问题时使用的单通道验证步骤，可以先跳过。
+
 ## 1. 当前实现状态
 
 `ironsight` 已经具备协议解析能力，本次又加入了可直接运行的本地导出程序 `examples/raw_point_export.rs`。
@@ -336,82 +338,362 @@ ironsight\
 
 Collector 和 writer 仍集中在 `raw_point_export.rs` 中，没有增加第三方依赖。主动分页所需的命令编码、客户端开关和 Shot 状态机已经分别加入 `protocol/shot.rs`、`protocol/mod.rs`、`client.rs` 和 `seq.rs`。真机验证稳定后，可再把导出逻辑拆分到 `src/export/`。
 
-## 4. Windows 10 环境准备
+## 4. Windows 10 从零安装
 
-### 4.1 安装编译工具
+本节按“刚拿到一台 Windows 10 电脑、没有安装过编程工具”的情况编写。只想运行导出器，也必须先完成一次编译；编译成功后，以后采集时只需要运行生成的 `raw_point_export.exe`，不用每次重新安装。
 
-安装 Visual Studio 2022 Build Tools，选择：
+整个过程分成两种网络状态：
 
-- Desktop development with C++；
-- MSVC x64/x86 build tools；
-- Windows 10 或 Windows 11 SDK。
+1. **电脑连接普通互联网时**：安装工具、下载项目、下载 Rust 依赖并完成编译；
+2. **电脑连接 Mevo+ Wi-Fi 时**：运行已经编译好的程序并采集数据。
 
-安装 Rustup 后，在新 PowerShell 中执行：
+Mevo+ Wi-Fi 通常不能访问互联网，所以一定要先完成第 4 节，再切换到 Mevo+ Wi-Fi。
+
+### 4.1 开始前准备
+
+需要准备：
+
+- 一台 64 位 Windows 10 笔记本；
+- 可用的普通互联网连接；
+- 至少约 10 GB 可用磁盘空间，主要供 Visual Studio Build Tools 使用；
+- 已解压的本项目源码，或者可以访问 GitHub 下载源码；
+- Mevo+ 及其 Wi-Fi 密码；
+- 一把卷尺，用于测量 Mevo+ 到球的距离，以及击球面相对设备基准的高度参数。
+
+先确认 Windows 是 64 位：
+
+1. 按键盘 `Win + I` 打开“设置”；
+2. 进入“系统” → “关于”；
+3. 查看“系统类型”；
+4. 应显示“64 位操作系统，基于 x64 的处理器”。
+
+如果是 32 位 Windows，不要继续安装本指南中的 x64 工具链，应先更换为 64 位 Windows。
+
+### 4.2 认识 PowerShell
+
+后面的命令都在 PowerShell 中执行：
+
+1. 单击 Windows 左下角“开始”；
+2. 输入 `PowerShell`；
+3. 打开“Windows PowerShell”；
+4. 看到类似 `PS C:\Users\你的用户名>` 的提示符后，即可输入命令。
+
+除非某一步明确要求，否则不需要“以管理员身份运行”。每次只复制代码框中的命令，不要复制前面的 `PS C:\...>` 提示符。
+
+可以先测试：
 
 ```powershell
-rustup toolchain install 1.94
-rustup component add clippy --toolchain 1.94
-rustup show
-rustc --version
-cargo --version
+Write-Host "PowerShell 可以正常使用"
 ```
 
-默认 host 应为：
+如果屏幕打印出“PowerShell 可以正常使用”，说明操作正确。
+
+### 4.3 安装 Visual Studio 2022 Build Tools
+
+Rust 在 Windows 上需要微软的 C++ 链接器。这里安装的是免费的编译工具，不需要安装完整的 Visual Studio，也不需要登录微软账号。
+
+1. 保持电脑连接普通互联网；
+2. 用浏览器打开 <https://visualstudio.microsoft.com/visual-cpp-build-tools/>；
+3. 下载“Build Tools for Visual Studio 2022”；
+4. 双击下载到的 `vs_BuildTools.exe`；
+5. 如果 Windows 弹出“是否允许此应用对你的设备进行更改”，选择“是”；
+6. 等待“Visual Studio Installer”启动；
+7. 在“工作负荷（Workloads）”页勾选“使用 C++ 的桌面开发（Desktop development with C++）”；
+8. 查看右侧“安装详细信息”，确认至少包含以下内容：
+   - MSVC v143 - VS 2022 C++ x64/x86 build tools；
+   - Windows 10 SDK，或者安装器提供的 Windows 11 SDK；
+9. 单击右下角“安装（Install）”；
+10. 等待安装完成。如果安装器要求重启电脑，就先重启。
+
+安装器中其他 C++ 可选组件不必全部勾选。以后如果编译时看到 `link.exe not found`，重新打开“Visual Studio Installer”，单击 Build Tools 旁边的“修改”，确认上述工作负荷和 SDK 已安装。
+
+### 4.4 安装 Rust 1.94 工具链
+
+1. 用浏览器打开 <https://rustup.rs/>；
+2. 下载并运行 `rustup-init.exe`；
+3. 出现黑色安装窗口后，输入 `1` 并按回车，采用默认安装；
+4. 等待看到 Rust 安装完成的提示；
+5. 关闭之前打开的所有 PowerShell 窗口；
+6. 重新打开一个 PowerShell，让新的 `PATH` 环境变量生效。
+
+先确认 `rustup` 已经可用：
+
+```powershell
+rustup --version
+```
+
+然后安装项目指定的 Rust 1.94、MSVC 目标和 Clippy：
+
+```powershell
+rustup set default-host x86_64-pc-windows-msvc
+rustup toolchain install 1.94-x86_64-pc-windows-msvc
+rustup component add clippy --toolchain 1.94-x86_64-pc-windows-msvc
+```
+
+检查安装结果：
+
+```powershell
+rustup show
+rustc +1.94-x86_64-pc-windows-msvc --version
+cargo +1.94-x86_64-pc-windows-msvc --version
+```
+
+应能看到包含以下内容的输出，后面的小版本信息可能略有不同：
 
 ```text
+rustc 1.94...
+cargo 1.94...
 x86_64-pc-windows-msvc
 ```
 
-### 4.2 准备项目
+如果提示“无法将 `rustup`、`rustc` 或 `cargo` 识别为命令”：
 
-建议项目目录：
-
-```text
-C:\dev\ironsight
-```
-
-在仍有互联网时执行：
+1. 先关闭 PowerShell，再重新打开；
+2. 重新执行 `rustup --version`；
+3. 仍然失败时，在当前窗口执行下面这行临时加入路径，然后重试：
 
 ```powershell
-Set-Location C:\dev\ironsight
+$env:Path += ";$env:USERPROFILE\.cargo\bin"
+```
+
+### 4.5 获取项目源码
+
+建议把项目放在英文、无空格的短路径中。本指南使用：
+
+```text
+C:\Users\你的用户名\source\ironsight
+```
+
+下面两种方法任选一种。已经拿到包含本指南和 `examples\raw_point_export.rs` 的完整项目文件夹时，直接使用“方法 B”。
+
+#### 方法 A：使用 Git 下载
+
+先安装 Git：
+
+1. 打开 <https://git-scm.com/download/win>；
+2. 下载 64 位 Git for Windows 安装器；
+3. 双击安装；
+4. 不确定某个选项时保留默认值，一直单击“Next”，最后单击“Install”；
+5. 安装完成后关闭并重新打开 PowerShell。
+
+确认 Git 可用：
+
+```powershell
+git --version
+```
+
+创建源码目录并下载项目：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\source"
+Set-Location "$env:USERPROFILE\source"
+git clone https://github.com/Apollo66666/ironsight.git
+Set-Location "$env:USERPROFILE\source\ironsight"
+```
+
+如果 `git clone` 提示目标文件夹已经存在，不要反复下载。进入已有目录：
+
+```powershell
+Set-Location "$env:USERPROFILE\source\ironsight"
+```
+
+#### 方法 B：解压收到的 ZIP 项目包
+
+1. 在资源管理器中找到 ZIP 文件；
+2. 右键 ZIP → “全部提取”；
+3. 将解压后的项目文件夹移动到 `C:\Users\你的用户名\source\ironsight`；
+4. 打开该文件夹，确认里面能直接看到 `Cargo.toml`、`src` 和 `examples`；
+5. 如果出现 `ironsight\ironsight\Cargo.toml` 这种双层目录，应把包含 `Cargo.toml` 的内层目录作为项目目录。
+
+然后在 PowerShell 中进入项目目录：
+
+```powershell
+Set-Location "$env:USERPROFILE\source\ironsight"
+```
+
+确认目录正确：
+
+```powershell
+Get-ChildItem Cargo.toml, .\examples\raw_point_export.rs
+```
+
+两项都能列出来才继续。如果提示找不到 `Cargo.toml`，说明当前目录不对；在资源管理器里找到 `Cargo.toml` 所在文件夹，再复制其完整路径用于 `Set-Location`。
+
+本仓库的 `.gitignore` 明确忽略了 `Cargo.lock`，所以刚 `git clone` 或 `git pull` 后看不到该文件是正常现象。第一次执行 `cargo fetch` 或 `cargo build` 时，Cargo 会在本地自动生成它；不要手工创建空的 `Cargo.lock`。由于仓库没有提交锁文件，首次运行命令不能加 `--locked`。
+
+### 4.6 在普通互联网下下载依赖
+
+确认此时电脑仍连接普通互联网，不要连接 Mevo+ Wi-Fi。进入项目目录后执行：
+
+```powershell
+Set-Location "$env:USERPROFILE\source\ironsight"
 cargo fetch
+```
+
+第一次执行会下载若干 Rust 软件包，等待命令结束并重新出现 `PS ...>` 提示符。黄色 `warning` 通常只是警告；红色 `error` 才表示失败。
+
+如果这里提示网络超时，先用浏览器确认普通互联网正常，再重新执行同一条命令。必须在连接 Mevo+ 之前完成依赖下载。
+
+### 4.7 编译导出器
+
+仍在项目目录中执行：
+
+```powershell
+cargo build --release --features gvp --example raw_point_export
+```
+
+第一次编译可能需要几分钟。成功时最后会看到类似：
+
+```text
+Finished `release` profile ...
+```
+
+编译完成后的程序位置是：
+
+```text
+C:\Users\你的用户名\source\ironsight\target\release\examples\raw_point_export.exe
+```
+
+用下面的命令确认文件确实存在：
+
+```powershell
+Test-Path .\target\release\examples\raw_point_export.exe
+```
+
+应返回：
+
+```text
+True
+```
+
+再查看程序帮助：
+
+```powershell
+.\target\release\examples\raw_point_export.exe --help
+```
+
+能看到 `--device`、`--mode`、`--range-mm`、`--height-mm` 和 `--output`，就说明安装和编译已经成功。
+
+### 4.8 创建数据输出目录
+
+默认输出目录是 `C:\MevoData`。先尝试创建：
+
+```powershell
+New-Item -ItemType Directory -Force "C:\MevoData"
+```
+
+如果提示“拒绝访问”，不要用管理员权限硬改，可以改用当前用户肯定有权限的文档目录：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\Documents\MevoData"
+```
+
+后面运行时把 `--output C:\MevoData` 对应改成：
+
+```text
+--output "$env:USERPROFILE\Documents\MevoData"
+```
+
+### 4.9 可选的开发检查
+
+以下命令用于检查代码，不是正常采集的必需步骤。需要时在普通互联网下执行：
+
+```powershell
 cargo check --features gvp --example raw_point_export
 cargo clippy --features gvp --example raw_point_export -- -D warnings
 cargo test --lib --features gvp
 ```
 
-连接 Mevo+ Wi-Fi 后通常没有互联网，所以依赖必须提前下载。当前完整的 `cargo test --features gvp` 还会触发一个仓库既有的 `fusion_preset` 断言不一致；它不涉及导出器使用的 `raw_fusion_preset`，详见项目报告第 17 节。
+当前完整的 `cargo test --features gvp` 还会触发一个仓库既有的 `fusion_preset` 断言不一致；它不涉及导出器使用的 `raw_fusion_preset`，详见项目报告第 17 节。只运行导出器不需要执行完整测试。
 
-## 5. 连接 Mevo+
+## 5. Windows 10 连接 Mevo+
 
-1. 打开 Mevo+；
-2. 在 Windows 中连接 `FS M2-XXXXXX` Wi-Fi；
-3. 等待 Wi-Fi 获得 `192.168.2.x` 地址；
-4. 关闭其他正在访问 Mevo+ 的客户端；
-5. 暂停 VPN；
-6. 测试两个端口。
+### 5.1 切换到 Mevo+ Wi-Fi
+
+1. 确认第 4.7 节已经编译成功；
+2. 打开 Mevo+，等待设备完成启动；
+3. 单击 Windows 任务栏右下角的网络图标；
+4. 在 Wi-Fi 列表中找到 `FS M2-XXXXXX`；
+5. 单击“连接”；
+6. 按设备标签、屏幕或官方说明输入该设备的 Wi-Fi 密码；
+7. 等待 Windows 显示“已连接，无 Internet”或“无 Internet，安全”。
+
+“无 Internet”是正常现象，因为这个 Wi-Fi 用来直连 Mevo+，不是用来上网。不要因为该提示切回家中 Wi-Fi。
+
+连接前还应做这些事：
+
+- 完全退出 FS Golf、E6、Awesome Golf 等可能连接 Mevo+ 的程序；
+- 让手机和平板断开 Mevo+ Wi-Fi，避免另一个客户端占用设备；
+- 暂停 VPN 和代理软件；
+- 笔记本同时插网线时，首次测试建议先拔掉网线，避免路由走错；
+- 长时间采集时接通电源，并临时关闭自动睡眠。
+
+### 5.2 确认电脑拿到正确地址
+
+打开 PowerShell，执行：
 
 ```powershell
 ipconfig
+```
+
+找到“无线局域网适配器 WLAN”或“Wireless LAN adapter Wi-Fi”，确认 IPv4 地址类似：
+
+```text
+192.168.2.2
+192.168.2.10
+192.168.2.xxx
+```
+
+只要前三段是 `192.168.2` 即可，不要求最后一段完全相同。Mevo+ 默认地址是 `192.168.2.1`。
+
+如果电脑地址不是 `192.168.2.x`：
+
+1. 在 Wi-Fi 列表中断开 `FS M2-XXXXXX`；
+2. 等待 5 秒后重新连接；
+3. 再执行一次 `ipconfig`；
+4. 仍然不对时，重启 Mevo+ 和电脑的 Wi-Fi，再试一次。
+
+### 5.3 测试雷达和相机端口
+
+在 PowerShell 中逐条执行：
+
+```powershell
 Test-NetConnection 192.168.2.1 -Port 5100
 Test-NetConnection 192.168.2.1 -Port 1258
 ```
 
-判断：
+每条命令都要查看最后的：
 
-- 5100 成功：可以读取雷达数据；
-- 1258 成功：可以连接 GVP 相机服务；
-- 5100 成功、1258 失败：先完成雷达验证，再检查相机启动和设备功能；
-- 两者都失败：检查 Wi-Fi、`route print`、防火墙和其他客户端。
+```text
+TcpTestSucceeded : True
+```
 
-Windows 显示“无 Internet，已连接”是正常现象。长时间采集时关闭自动睡眠和 Wi-Fi 网卡节能。
+判断方法：
 
-## 6. 第一步：验证雷达原始点
+- 5100 为 `True`：雷达服务可连接，这是启动导出器的必要条件；
+- 1258 为 `True`：GVP 相机服务当前已经可连接；
+- 5100 为 `True`、1258 为 `False`：先不要判定失败。导出器会通过 5100 启动并切换相机模式，然后才连接 1258；可以继续运行一次，以程序是否显示 `GVP connected. Waiting for shots...` 为最终判断；
+- 两者都为 `False`：通常是 Wi-Fi 连错、其他 App 正占用设备、VPN/路由干扰，或者 Mevo+ 尚未启动完成。
+
+端口失败时按以下顺序排查：
+
+1. 再确认当前 Wi-Fi 名称确实是 `FS M2-XXXXXX`；
+2. 退出所有官方和第三方高尔夫软件；
+3. 关闭 VPN；
+4. 重启 Mevo+，重新连接 Wi-Fi 后等待约 30 秒；
+5. 再执行两条 `Test-NetConnection`；
+6. 仍失败时执行 `route print`，确认 `192.168.2.0` 没有被其他网卡或 VPN 占用。
+
+不建议为了测试而永久关闭 Windows 防火墙。如果首次运行程序时 Windows 防火墙弹窗询问是否允许访问，只勾选“专用网络”，然后选择“允许访问”。
+
+## 6. 可选：单独验证雷达原始点
+
+如果只想尽快使用最终导出器，可以跳过第 6、7 节，直接进入第 9 节。遇到问题、需要判断是雷达通道还是相机通道失败时，再回来分别运行这两个底层示例。
 
 先构建现有低层示例：
 
 ```powershell
-Set-Location C:\dev\ironsight
+Set-Location "$env:USERPROFILE\source\ironsight"
 cargo build --release --example event_loop
 ```
 
@@ -452,7 +734,7 @@ AvrSettings {
 }
 ```
 
-`RadarCal.range_mm` 和 `height_mm` 必须按雷达到球的真实距离和高度设置。
+`RadarCal.range_mm` 和 `height_mm` 仍应按实际安装几何填写；两者不是从击球结果直接读取的字段。
 
 本步骤验收：
 
@@ -461,13 +743,14 @@ AvrSettings {
 - 至少收到一页 `PrcData`；
 - 击球结束后自动重新 Arm。
 
-## 7. 第二步：验证相机原始点
+## 7. 可选：单独验证相机原始点
 
 相机原始点来自 TCP 1258 的 GVP `RESULT`，不是 8080 视频流。
 
 构建现有双通道示例：
 
 ```powershell
+Set-Location "$env:USERPROFILE\source\ironsight"
 cargo build --release --features gvp --example gvp_testing
 ```
 
@@ -537,47 +820,211 @@ ShotComplete 先写雷达；RESULT 晚到时补写相机并更新 summary
 Expected Track 只是给设备内相机跟踪器提供搜索区域，不会把雷达点与相机点融合，也不会改变导出的原始测量值。
 导出器把 GVP 的 `save_videos_enabled` 设为 `false`，并忽略视频可用通知，不下载或保存视频。
 
-## 9. Windows 10 手把手运行
+## 9. Windows 10 第一次采集：逐步照做
 
-先在可联网状态完成构建：
+第 4 节只需安装一次。以后每次采集，从本节开始操作即可。
+
+### 9.1 摆放设备并记录参数
+
+先按 Mevo+ 官方要求摆好设备、球和击球区域，再记录下面三个参数：
+
+| 参数 | 怎样填写 | 示例 |
+|---|---|---|
+| `--mode` | 默认是室内；室内填 `indoor`，室外填 `outdoor` | `indoor` |
+| `--range-mm` | Mevo+ 到球的水平距离，单位毫米 | 2.743 米 = `2743` |
+| `--height-mm` | 击球面相对设备基准的高度参数（surface height），单位毫米 | 2.5 厘米 = `25` |
+
+换算方法：
+
+- 米乘以 1000 等于毫米，例如 `2.5 米 = 2500 毫米`；
+- 厘米乘以 10 等于毫米，例如 `3 厘米 = 30 毫米`。
+
+不要直接照抄示例数值，应填写现场实际测量值。`height-mm` 不是简单地填写“设备离地高度”，而是协议中的击球面高度校准量。当前程序的可填写范围是 `0–255`；如果你的测量值明显超出该范围，先核对测量基准和单位，不要随意截断数字。
+
+#### 为什么距离和高度需要手工填写
+
+这两个值属于击球前发送给 AVR 的 `RadarCal (0xA4)` 安装校准参数：
+
+- `range-mm` 是设备到球位（tee）的安装距离；
+- `height-mm` 是击球面高度校准量；
+- 设备收到后只会回显这两个值，表示配置已接收，并不会返回一组独立测量出来的安装距离和高度。
+
+不能直接拿击球后的雷达结果代替，主要有三个原因：
+
+1. 雷达在 Arm 和跟踪之前就需要这些安装参数，击球结果此时还不存在；
+2. PRC 点中的 `dist` 是球或杆头在各采样时刻相对雷达的动态斜距，不是固定的“雷达到球位水平距离”；
+3. FlightResult 的起点、轨迹和落点已经经过设备内部配置与解算，用它反推同一组校准参数会形成循环依赖。
+
+当前协议实现没有发现“让设备自动测出并返回 RadarCal 安装几何”的独立读取命令。理论上可以另外开发静止球/标定板识别和自动标定流程，但那是新的标定算法，不是简单读取现有击球结果。本程序因此要求启动时明确填写并写入 `session.json`；其中 `range-mm` 还会用于生成相机 Expected Track，`height-mm` 当前只发送给设备作为 RadarCal。
+
+### 9.2 做启动前检查
+
+逐项确认：
+
+- [ ] 第 4.7 节中的 `Test-Path` 返回 `True`；
+- [ ] Windows 当前连接的是 Mevo+ 的 `FS M2-XXXXXX` Wi-Fi；
+- [ ] `ipconfig` 显示电脑地址为 `192.168.2.x`；
+- [ ] 5100 的 `TcpTestSucceeded` 是 `True`；1258 最好为 `True`，但启动前为 `False` 时仍可继续运行一次，由程序先启动相机服务；
+- [ ] 手机、平板和其他电脑没有同时连接或控制这台 Mevo+；
+- [ ] FS Golf 等软件已经完全退出；
+- [ ] 已经量好 `range-mm` 和 `height-mm`；
+- [ ] 击球区域安全，电脑已接通电源且不会自动睡眠。
+
+### 9.3 打开 PowerShell 并进入项目目录
+
+打开一个新的 PowerShell，执行：
 
 ```powershell
-Set-Location C:\dev\ironsight
-cargo fetch
-cargo build --release --features gvp --example raw_point_export
+Set-Location "$env:USERPROFILE\source\ironsight"
 ```
 
-连接 Mevo+ Wi-Fi，关闭其他可能占用设备的 App，然后检查端口：
+确认程序仍然存在：
 
 ```powershell
-Test-NetConnection 192.168.2.1 -Port 5100
-Test-NetConnection 192.168.2.1 -Port 1258
+Test-Path .\target\release\examples\raw_point_export.exe
 ```
 
-测量并填写实际摆位：
+如果返回 `False`，回到第 4.7 节重新编译。注意：此时电脑连接 Mevo+，通常没有互联网；如果 Rust 依赖之前没有下载完整，需要先切回普通互联网完成编译，再重新连接 Mevo+。
 
-- `range-mm`：Mevo+ 到球的水平距离，单位毫米；
-- `height-mm`：Mevo+ 雷达参考高度，单位毫米；
-- 室内全挥杆用 `--mode indoor`，室外用 `--mode outdoor`。
+### 9.4 复制命令并替换三个现场参数
 
-运行：
+默认室内示例，输出到 `C:\MevoData`：
 
 ```powershell
-.\target\release\examples\raw_point_export.exe `
-  --device 192.168.2.1:5100 `
-  --mode indoor `
-  --range-mm 2743 `
-  --height-mm 25 `
-  --output C:\MevoData
+.\target\release\examples\raw_point_export.exe --device 192.168.2.1:5100 --mode indoor --range-mm 2743 --height-mm 25 --output "C:\MevoData"
 ```
 
-程序会打印实际 Session 目录。看到 `ARMED - hit a ball.` 后击球；看到 `radar saved` 表示雷达文件已写入，看到 `camera files saved` 表示相机结果已补齐。采集结束可按 Ctrl+C；已经完成的杆都已在事件到达时落盘。
+室外示例：
 
-查看参数帮助：
+```powershell
+.\target\release\examples\raw_point_export.exe --device 192.168.2.1:5100 --mode outdoor --range-mm 2438 --height-mm 25 --output "C:\MevoData"
+```
+
+请根据现场修改 `indoor/outdoor`、距离和高度。整条命令应一次性复制到 PowerShell 中，再按回车。
+
+如果第 4.8 节选择了“文档”目录，则使用：
+
+```powershell
+.\target\release\examples\raw_point_export.exe --device 192.168.2.1:5100 --mode indoor --range-mm 2743 --height-mm 25 --output "$env:USERPROFILE\Documents\MevoData"
+```
+
+所有参数含义：
+
+| 参数 | 必须修改吗 | 说明 |
+|---|---|---|
+| `--device 192.168.2.1:5100` | 通常不用 | Mevo+ 默认雷达地址和端口 |
+| `--mode indoor` | 按环境修改 | 默认 `indoor`；只允许 `indoor` 或 `outdoor`，大小写均可，建议使用小写 |
+| `--range-mm 2743` | 必须实测 | 雷达到球的水平距离，范围 `1–65535` 毫米 |
+| `--height-mm 25` | 必须实测 | 击球面高度校准量，范围 `0–255`，不是简单的设备离地高度 |
+| `--output "C:\MevoData"` | 可选 | 数据保存位置；带空格的路径必须加双引号 |
+
+随时可查看帮助：
 
 ```powershell
 .\target\release\examples\raw_point_export.exe --help
 ```
+
+### 9.5 等待程序完成初始化
+
+按回车后不要马上击球。程序会依次显示类似信息：
+
+```text
+Output session: C:\MevoData\2026-09-17_...
+Connecting to binary protocol at 192.168.2.1:5100...
+Connected to binary protocol.
+DSP sync...
+AVR sync...
+PI sync...
+Configuring mode=indoor range=2743mm height=25mm...
+Starting camera (standard warmup)...
+Switching camera to Raw Fusion...
+Connecting to GVP at 192.168.2.1:1258...
+GVP connected. Waiting for shots...
+ARMED - hit a ball.
+```
+
+只有看到下面这一行后才击球：
+
+```text
+ARMED - hit a ball.
+```
+
+如果 Windows 防火墙首次弹窗，只允许“专用网络”访问即可。如果程序在 `Connecting`、`sync` 或相机启动阶段报错并退出，先按第 14 节排查，不要继续击球。
+
+### 9.6 击球并等待文件保存
+
+击球后，程序会打印类似：
+
+```text
+Shot #1 triggered; guid=...
+Shot #1 radar saved: ball=... club=... radarComplete=...
+Shot #1 camera files saved.
+ARMED - hit a ball.
+```
+
+含义如下：
+
+- `triggered`：设备识别到一杆，并为它创建了唯一 GUID；
+- `radar saved`：这一杆的雷达 CSV 和摘要已经写盘；
+- `camera files saved`：对应相机跟踪结果已经写盘；
+- 再次出现 `ARMED - hit a ball.`：可以打下一杆。
+
+不要在程序尚未重新显示 `ARMED` 时连续击下一球。第一次测试建议只打一杆，确认输出完整后再做连续采集。
+
+`radarComplete=false` 不等于文件没保存，它表示完整性检查发现缺页、点数不一致或超时；应查看该杆的 `summary.json` 和 `session.log`。
+
+### 9.7 打开并检查输出文件
+
+程序启动时第一行 `Output session:` 后面的路径，就是本次采集目录。另开一个 PowerShell 窗口，可直接打开输出根目录：
+
+```powershell
+explorer.exe "C:\MevoData"
+```
+
+如果输出在文档目录：
+
+```powershell
+explorer.exe "$env:USERPROFILE\Documents\MevoData"
+```
+
+进入最新时间命名的文件夹，再进入 `shot_000001`。完整的一杆通常应至少看到：
+
+```text
+summary.json
+radar_ball_raw.csv
+radar_club_raw.csv
+camera_ball_raw.csv
+camera_club_raw.csv
+gvp_result.json
+```
+
+某类点没有被设备返回时，对应 CSV 可能不存在或为空；应结合 `summary.json` 的点数与 `warnings` 判断，不要只看文件名。
+
+### 9.8 正确结束采集
+
+1. 等最后一杆显示 `radar saved`；
+2. 最好再等待 `camera files saved`；
+3. 确认程序重新出现 `ARMED - hit a ball.`；
+4. 在正在运行程序的 PowerShell 窗口中按 `Ctrl + C`；
+5. 等 PowerShell 回到 `PS C:\...>` 提示符；
+6. 再关闭窗口、关闭 Mevo+ 或切换 Wi-Fi。
+
+已经完成的杆会在事件到达时立即写盘。当前版本不保证保存“已经触发、但还没有到 ShotComplete，也没有收到 GVP RESULT”的半截杆，所以不要在击球处理过程中直接关机、断开 Wi-Fi 或强制关闭 PowerShell。
+
+### 9.9 第二次及以后运行
+
+只要项目代码没有更新，就不需要再次安装或编译。以后只需：
+
+1. 打开 Mevo+；
+2. 连接 `FS M2-XXXXXX` Wi-Fi；
+3. 退出其他 Mevo+ 客户端，确认 5100 可连接，并检查 1258；
+4. 打开 PowerShell；
+5. `Set-Location "$env:USERPROFILE\source\ironsight"`；
+6. 运行第 9.4 节的一行命令；
+7. 等待 `ARMED` 后击球；
+8. 完成后按 `Ctrl + C`。
+
+每次启动都会创建新的时间戳 Session 目录，不会覆盖上一次的数据。
 
 ## 10. 如何检查一次输出
 
@@ -675,3 +1122,120 @@ Windows 10 笔记本
 - 本地文件命名和临时文件安全写入。
 
 这套方案只保存雷达与相机的原始测量点，不进行任何目标融合。主动 PRC 分页已经实现；剩余工作是用当前 Mevo+ 固件做真机确认，以及可选的 Ctrl+C partial shot 写盘和长期稳定性增强。
+
+## 14. Windows 10 常见问题速查
+
+### 14.1 `cargo`、`rustc` 或 `rustup` 不是命令
+
+原因通常是 Rust 刚安装完，旧 PowerShell 还没有读取新环境变量。
+
+处理：关闭所有 PowerShell，重新打开，再执行：
+
+```powershell
+rustup --version
+```
+
+仍失败时临时加入路径：
+
+```powershell
+$env:Path += ";$env:USERPROFILE\.cargo\bin"
+rustup --version
+```
+
+### 14.2 `could not find Cargo.toml`
+
+原因是 PowerShell 当前不在项目根目录。执行：
+
+```powershell
+Set-Location "$env:USERPROFILE\source\ironsight"
+Get-ChildItem Cargo.toml
+```
+
+如果仍找不到，在资源管理器中搜索 `Cargo.toml`，进入它所在的文件夹，不要停在 ZIP 文件或外层同名目录。
+
+### 14.3 `link.exe not found`、找不到 Windows SDK 或链接失败
+
+原因通常是 Visual Studio Build Tools 的 C++ 工作负荷没有安装完整。
+
+处理：
+
+1. 打开“Visual Studio Installer”；
+2. 找到 Visual Studio 2022 Build Tools，单击“修改”；
+3. 勾选“使用 C++ 的桌面开发”；
+4. 确认 MSVC v143 x64/x86 和 Windows SDK 已勾选；
+5. 安装完成后重启电脑；
+6. 重新执行第 4.7 节的编译命令。
+
+### 14.4 `cargo fetch` 下载失败或超时
+
+确认电脑连接的是能上网的普通 Wi-Fi，而不是 `FS M2-XXXXXX`。浏览器能正常打开网页后，回到项目目录重新执行：
+
+```powershell
+cargo fetch
+```
+
+下载成功并完成第 4.7 节编译后，才切换到 Mevo+ Wi-Fi。
+
+如果看到 `the lock file needs to be updated but --locked was passed`，说明执行的是旧版命令。这个仓库没有提交 `Cargo.lock`，请删除命令中的 `--locked`，不要手工创建空文件。
+
+### 14.5 `Access is denied` 或输出目录无法创建
+
+改用当前用户的文档目录：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\Documents\MevoData"
+```
+
+运行时把输出参数改为：
+
+```text
+--output "$env:USERPROFILE\Documents\MevoData"
+```
+
+### 14.6 `Connection refused`、`timed out` 或连接立即断开
+
+先不要反复启动程序。依次检查：
+
+1. Windows 当前 Wi-Fi 是否为 `FS M2-XXXXXX`；
+2. `ipconfig` 是否得到 `192.168.2.x`；
+3. FS Golf、E6、Awesome Golf 等其他客户端是否已经退出；
+4. VPN 是否已经暂停；
+5. 5100 是否通过 `Test-NetConnection`，以及 1258 的测试结果是什么；
+6. Mevo+ 是否已完全启动；必要时重启设备并等待约 30 秒。
+
+### 14.7 5100 成功，但 1258 失败
+
+启动导出器之前测得 1258 为 `False`，不一定代表最终失败：程序会先通过 5100 完成握手、Standard 相机预热和 Raw Fusion 切换，然后才连接 1258。因此只要 5100 为 `True`，可以继续运行一次。
+
+如果程序已经显示 `Switching camera to Raw Fusion...`，随后仍在 `Connecting to GVP at 192.168.2.1:1258...` 阶段报错，才说明当前 GVP 相机服务确实无法使用。此时检查设备固件、相机状态和账号已购买功能。本项目不会绕过设备授权。不能把端口 1258 随意改成 8080；8080 是视频流，不是本项目使用的相机跟踪结果端口。
+
+### 14.8 参数报错
+
+常见提示及处理：
+
+- `--mode must be indoor or outdoor`：只能填写 `indoor` 或 `outdoor`，程序不区分大小写；
+- `--range-mm must be greater than zero`：距离必须是 `1–65535` 范围内的整数毫米；
+- `number too large to fit in target type`：`height-mm` 超过 `255`，检查单位和测量基准；
+- `missing value after ...`：某个参数后面漏了数值；
+- `unknown argument`：参数拼写错误，执行 `raw_point_export.exe --help` 对照。
+
+### 14.9 程序能运行，但没有检测到击球
+
+确认已经看到 `ARMED - hit a ball.`，并检查：
+
+- `indoor/outdoor` 是否选对；
+- `range-mm` 和 `height-mm` 是否填写为毫米且符合实际摆位；
+- 球和雷达是否按 Mevo+ 官方要求对齐；
+- 设备是否被另一个 App 同时控制；
+- `session.log` 中是否有断线或配置失败。
+
+### 14.10 有雷达文件，但没有相机文件
+
+打开该杆的 `summary.json`，查看 `cameraResultReceived` 和 `warnings`，再检查：
+
+- 1258 端口是否连通；
+- 是否打印过 `GVP connected. Waiting for shots...`；
+- GVP RESULT 是否因为固件、授权、相机标定或跟踪失败而没有返回；
+- `session.log` 是否记录 `GVP disconnected` 或未匹配 GUID。
+
+即使相机结果失败，已经完成的雷达文件仍会保留。
