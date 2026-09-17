@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
-use std::net::SocketAddr;
+use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::{Arc, Mutex};
@@ -52,6 +52,9 @@ const CLUB_RADIUS_M: f64 = 0.050;
 const N_SAMPLES: usize = 21;
 const TRACK_DURATION: f64 = 0.1;
 const DEFAULT_START_TIME: f64 = 0.014;
+const CAMERA_RESULT_TIMEOUT: Duration = Duration::from_secs(10);
+const GVP_RECONNECT_INTERVAL: Duration = Duration::from_secs(2);
+const GVP_RECONNECT_TIMEOUT: Duration = Duration::from_millis(250);
 
 #[derive(Debug)]
 struct Options {
@@ -161,6 +164,10 @@ struct ShotCollector {
     prc_fetch: PrcFetchStatus,
     camera_result: Option<BallTrackerResult>,
     gvp_result_raw: Option<String>,
+    camera_trigger_sent: bool,
+    camera_timed_out: bool,
+    camera_failed: bool,
+    camera_deadline: Option<Instant>,
     shot_lifecycle_complete: bool,
     radar_complete: bool,
     hints_sent: bool,
@@ -346,26 +353,37 @@ fn run() -> AppResult<()> {
 
     let raw_results: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
     println!("Connecting to GVP at {gvp_addr}...");
-    let mut gvp_conn = GvpConnection::connect_timeout(&gvp_addr, Duration::from_secs(5))?;
-    {
-        let raw_results = Arc::clone(&raw_results);
-        gvp_conn.set_on_recv(move |raw_json, message| {
-            if let GvpMessage::Result(result) = message
-                && let Ok(mut values) = raw_results.lock()
-            {
-                values.insert(result.guid.clone(), raw_json.to_owned());
-            }
-        });
-    }
-    let mut gvp = GvpClient::from_tcp(gvp_conn)?;
-    println!("GVP connected. Waiting for shots...");
-    log_event(&session.session_dir, "camera and GVP ready; arming radar");
+    let mut gvp = match connect_gvp(&gvp_addr, &raw_results, Duration::from_secs(5)) {
+        Ok(client) => {
+            println!("GVP connected. Waiting for camera IDLE...");
+            log_event(
+                &session.session_dir,
+                "GVP connected; waiting for camera IDLE",
+            );
+            Some(client)
+        }
+        Err(error) => {
+            eprintln!(
+                "warning: initial GVP connection failed: {error}; radar capture will continue"
+            );
+            log_event(
+                &session.session_dir,
+                &format!("initial GVP connection failed: {error}; continuing radar-only"),
+            );
+            None
+        }
+    };
+    let mut gvp_ready = false;
+    let mut next_gvp_reconnect = Instant::now() + GVP_RECONNECT_INTERVAL;
+    log_event(
+        &session.session_dir,
+        "radar armed independently of camera availability",
+    );
 
     let range_m = f64::from(options.range_mm) / 1000.0;
     let mut shot_count = 0u64;
     let mut current_guid: Option<String> = None;
     let mut collectors: HashMap<String, ShotCollector> = HashMap::new();
-    let mut gvp_connected = true;
 
     loop {
         if let Some(event) = binary.poll()? {
@@ -386,47 +404,101 @@ fn run() -> AppResult<()> {
                     );
                     current_guid = Some(guid.clone());
 
-                    if gvp_connected {
-                        if let Err(error) = gvp.send_trigger(&Trigger::new(guid.clone(), epoch))
-                            && let Some(shot) = collectors.get_mut(&guid)
-                        {
-                            shot.add_warning(format!("发送 GVP Trigger 失败: {error}"));
+                    let mut camera_error = None;
+                    if let Some(shot) = collectors.get_mut(&guid) {
+                        if gvp_ready {
+                            if let Some(client) = gvp.as_mut() {
+                                match client.send_trigger(&Trigger::new(guid.clone(), epoch)) {
+                                    Ok(()) => {
+                                        shot.camera_trigger_sent = true;
+                                        shot.camera_deadline =
+                                            Some(Instant::now() + CAMERA_RESULT_TIMEOUT);
+                                        gvp_ready = false;
+                                        let mut gvp_config = GvpConfig::fusion();
+                                        gvp_config.save_videos_enabled = false;
+                                        if let Err(error) = client.send_config(&gvp_config) {
+                                            camera_error =
+                                                Some(format!("发送 GVP Config 失败: {error}"));
+                                        }
+                                    }
+                                    Err(error) => {
+                                        camera_error =
+                                            Some(format!("发送 GVP Trigger 失败: {error}"));
+                                    }
+                                }
+                            } else {
+                                camera_error = Some("GVP 未连接，本杆仅保存雷达数据。".to_owned());
+                            }
+                        } else {
+                            shot.camera_failed = true;
+                            shot.add_warning(
+                                "相机尚未处于 IDLE，本杆跳过 GVP Trigger，仅保存雷达数据。",
+                            );
+                            println!(
+                                "Shot #{shot_count}: camera not ready; continuing radar-only."
+                            );
                         }
-                        let mut gvp_config = GvpConfig::fusion();
-                        gvp_config.save_videos_enabled = false;
-                        if let Err(error) = gvp.send_config(&gvp_config)
-                            && let Some(shot) = collectors.get_mut(&guid)
-                        {
-                            shot.add_warning(format!("发送 GVP Config 失败: {error}"));
-                        }
+                    }
+                    if let Some(reason) = camera_error {
+                        mark_camera_failure(&mut collectors, &guid, &reason);
+                        gvp = None;
+                        gvp_ready = false;
+                        next_gvp_reconnect = Instant::now() + GVP_RECONNECT_INTERVAL;
+                        eprintln!("warning: {reason}; radar capture will continue");
+                        log_event(&session.session_dir, &reason);
                     }
                 }
                 BinaryEvent::Message(envelope) => {
+                    let mut hint_error = None;
                     if let Some(guid) = current_guid.as_deref()
                         && let Some(shot) = collectors.get_mut(guid)
                     {
                         shot.merge_message(&envelope.message);
                         if matches!(envelope.message, Message::FlightResult(_)) {
-                            try_send_hints(shot, &mut gvp, gvp_connected, range_m);
+                            hint_error = try_send_hints(shot, gvp.as_mut(), range_m).err();
                         }
+                    }
+                    if let Some(error) = hint_error {
+                        handle_gvp_failure(
+                            &mut gvp,
+                            &mut gvp_ready,
+                            &mut next_gvp_reconnect,
+                            &mut collectors,
+                            current_guid.as_deref(),
+                            &session.session_dir,
+                            &format!("发送 GVP Expected Track 失败: {error}"),
+                        )?;
                     }
                 }
                 BinaryEvent::ShotDatum(datum) => {
+                    let mut hint_error = None;
                     if let Some(guid) = current_guid.as_deref()
                         && let Some(shot) = collectors.get_mut(guid)
                     {
                         shot.merge_datum(&datum);
                         if matches!(datum, ShotDatum::Flight(_)) {
-                            try_send_hints(shot, &mut gvp, gvp_connected, range_m);
+                            hint_error = try_send_hints(shot, gvp.as_mut(), range_m).err();
                         }
+                    }
+                    if let Some(error) = hint_error {
+                        handle_gvp_failure(
+                            &mut gvp,
+                            &mut gvp_ready,
+                            &mut next_gvp_reconnect,
+                            &mut collectors,
+                            current_guid.as_deref(),
+                            &session.session_dir,
+                            &format!("发送 GVP Expected Track 失败: {error}"),
+                        )?;
                     }
                 }
                 BinaryEvent::ShotComplete(data) => {
+                    let mut hint_error = None;
                     if let Some(guid) = current_guid.as_deref()
                         && let Some(shot) = collectors.get_mut(guid)
                     {
                         shot.merge_complete(&data);
-                        try_send_hints(shot, &mut gvp, gvp_connected, range_m);
+                        hint_error = try_send_hints(shot, gvp.as_mut(), range_m).err();
                         attach_raw_result(shot, &raw_results);
                         write_shot_outputs(&session.session_dir, shot)?;
                         println!(
@@ -436,10 +508,28 @@ fn run() -> AppResult<()> {
                             unique_club_points(shot).len(),
                             shot.radar_complete
                         );
+                        if gvp_ready {
+                            println!("Radar re-armed; ready for the next shot.");
+                        } else {
+                            println!(
+                                "Radar re-armed; next shot is allowed. Camera is unavailable or still busy, so the next shot may be radar-only."
+                            );
+                        }
                         log_event(
                             &session.session_dir,
                             &format!("shot {} radar files saved", shot.local_shot_id),
                         );
+                    }
+                    if let Some(error) = hint_error {
+                        handle_gvp_failure(
+                            &mut gvp,
+                            &mut gvp_ready,
+                            &mut next_gvp_reconnect,
+                            &mut collectors,
+                            current_guid.as_deref(),
+                            &session.session_dir,
+                            &format!("发送 GVP Expected Track 失败: {error}"),
+                        )?;
                     }
                     write_session_from_collectors(&session, &options, &collectors)?;
                 }
@@ -450,12 +540,15 @@ fn run() -> AppResult<()> {
             }
         }
 
-        if gvp_connected {
-            match gvp.poll() {
+        let mut gvp_failure = None;
+        if let Some(client) = gvp.as_mut() {
+            match client.poll() {
                 Ok(Some(GvpEvent::Result(result))) => {
                     let guid = result.guid.clone();
                     if let Some(shot) = collectors.get_mut(&guid) {
                         shot.camera_result = Some(*result);
+                        shot.camera_deadline = None;
+                        shot.camera_failed = false;
                         attach_raw_result(shot, &raw_results);
                         write_shot_outputs(&session.session_dir, shot)?;
                         println!("Shot #{} camera files saved.", shot.local_shot_id);
@@ -474,31 +567,187 @@ fn run() -> AppResult<()> {
                 }
                 Ok(Some(GvpEvent::Status(status))) => {
                     println!("[gvp] status={}", status.status());
+                    gvp_ready = status.is_idle();
+                    if gvp_ready {
+                        println!("Camera ready for the next shot.");
+                        let mut missing_result = false;
+                        for shot in collectors.values_mut() {
+                            if shot.camera_trigger_sent
+                                && shot.camera_result.is_none()
+                                && shot.camera_deadline.is_some()
+                            {
+                                shot.camera_failed = true;
+                                shot.camera_deadline = None;
+                                shot.add_warning(
+                                    "GVP 已返回 IDLE，但没有发送本杆 RESULT；雷达不受影响。",
+                                );
+                                write_shot_outputs(&session.session_dir, shot)?;
+                                missing_result = true;
+                            }
+                        }
+                        if missing_result {
+                            write_session_from_collectors(&session, &options, &collectors)?;
+                        }
+                    }
+                    log_event(
+                        &session.session_dir,
+                        &format!("GVP status={}", status.status()),
+                    );
                 }
                 Ok(Some(GvpEvent::Log(message))) => {
-                    println!("[gvp] {}: {}", message.level, message.message);
+                    let lower = message.message.to_ascii_lowercase();
+                    if lower.contains("error")
+                        || lower.contains("fail")
+                        || lower.contains("found 0")
+                    {
+                        eprintln!("[gvp] {}: {}", message.level, message.message);
+                        log_event(
+                            &session.session_dir,
+                            &format!("GVP log level={}: {}", message.level, message.message),
+                        );
+                    }
                 }
                 Ok(Some(
                     GvpEvent::Config(_) | GvpEvent::VideoAvailable(_) | GvpEvent::Unknown { .. },
                 ))
                 | Ok(None) => {}
                 Err(GvpError::Disconnected) => {
-                    gvp_connected = false;
-                    eprintln!("warning: GVP disconnected; radar export will continue");
-                    log_event(
-                        &session.session_dir,
-                        "GVP disconnected; continuing radar-only capture",
-                    );
+                    gvp_failure = Some("GVP disconnected during camera processing".to_owned());
                 }
                 Err(error) => {
-                    eprintln!("warning: GVP receive error: {error}");
-                    log_event(&session.session_dir, &format!("GVP receive error: {error}"));
+                    gvp_failure = Some(format!("GVP receive error: {error}"));
                 }
             }
         }
 
+        if let Some(reason) = gvp_failure {
+            handle_gvp_failure(
+                &mut gvp,
+                &mut gvp_ready,
+                &mut next_gvp_reconnect,
+                &mut collectors,
+                current_guid.as_deref(),
+                &session.session_dir,
+                &reason,
+            )?;
+            write_session_from_collectors(&session, &options, &collectors)?;
+        }
+
+        let now = Instant::now();
+        let mut camera_timeout_written = false;
+        for shot in collectors.values_mut() {
+            if shot.camera_result.is_none()
+                && !shot.camera_timed_out
+                && shot.camera_deadline.is_some_and(|deadline| now >= deadline)
+            {
+                shot.camera_timed_out = true;
+                shot.camera_failed = true;
+                shot.camera_deadline = None;
+                shot.add_warning(
+                    "等待 GVP RESULT 超过 10 秒；已放弃本杆相机结果并重置 GVP 连接，雷达不受影响。",
+                );
+                write_shot_outputs(&session.session_dir, shot)?;
+                camera_timeout_written = true;
+                eprintln!(
+                    "warning: Shot #{} camera result timed out; radar remains available",
+                    shot.local_shot_id
+                );
+            }
+        }
+        if camera_timeout_written {
+            gvp = None;
+            gvp_ready = false;
+            next_gvp_reconnect = Instant::now() + GVP_RECONNECT_INTERVAL;
+            log_event(
+                &session.session_dir,
+                "camera result timeout; resetting GVP connection while radar remains armed",
+            );
+            write_session_from_collectors(&session, &options, &collectors)?;
+        }
+
+        if gvp.is_none() && binary.is_armed() && Instant::now() >= next_gvp_reconnect {
+            match connect_gvp(&gvp_addr, &raw_results, GVP_RECONNECT_TIMEOUT) {
+                Ok(client) => {
+                    println!("GVP reconnected. Waiting for camera IDLE...");
+                    log_event(
+                        &session.session_dir,
+                        "GVP reconnected; waiting for camera IDLE",
+                    );
+                    gvp = Some(client);
+                    gvp_ready = false;
+                }
+                Err(error) => {
+                    log_event(
+                        &session.session_dir,
+                        &format!("GVP reconnect failed: {error}"),
+                    );
+                }
+            }
+            next_gvp_reconnect = Instant::now() + GVP_RECONNECT_INTERVAL;
+        }
+
         thread::sleep(Duration::from_millis(2));
     }
+}
+
+fn connect_gvp(
+    addr: &SocketAddr,
+    raw_results: &Arc<Mutex<HashMap<String, String>>>,
+    timeout: Duration,
+) -> Result<GvpClient<TcpStream>, GvpError> {
+    let mut conn = GvpConnection::connect_timeout(addr, timeout)?;
+    let raw_results = Arc::clone(raw_results);
+    conn.set_on_recv(move |raw_json, message| {
+        if let GvpMessage::Result(result) = message
+            && let Ok(mut values) = raw_results.lock()
+        {
+            values.insert(result.guid.clone(), raw_json.to_owned());
+        }
+    });
+    let mut client = GvpClient::from_tcp(conn)?;
+    client.query_config()?;
+    Ok(client)
+}
+
+fn mark_camera_failure(collectors: &mut HashMap<String, ShotCollector>, guid: &str, reason: &str) {
+    if let Some(shot) = collectors.get_mut(guid)
+        && shot.camera_result.is_none()
+    {
+        shot.camera_failed = true;
+        shot.camera_deadline = None;
+        shot.add_warning(reason.to_owned());
+    }
+}
+
+fn handle_gvp_failure(
+    gvp: &mut Option<GvpClient<TcpStream>>,
+    gvp_ready: &mut bool,
+    next_reconnect: &mut Instant,
+    collectors: &mut HashMap<String, ShotCollector>,
+    current_guid: Option<&str>,
+    session_dir: &Path,
+    reason: &str,
+) -> AppResult<()> {
+    *gvp = None;
+    *gvp_ready = false;
+    *next_reconnect = Instant::now() + GVP_RECONNECT_INTERVAL;
+    eprintln!("warning: {reason}; radar capture will continue");
+    log_event(session_dir, &format!("{reason}; continuing radar-only"));
+
+    let mut marked_any = false;
+    for shot in collectors.values_mut() {
+        if shot.camera_trigger_sent && shot.camera_result.is_none() && !shot.camera_failed {
+            shot.camera_failed = true;
+            shot.camera_deadline = None;
+            shot.add_warning(format!("{reason}；本杆相机结果不可用，雷达数据不受影响。"));
+            write_shot_outputs(session_dir, shot)?;
+            marked_any = true;
+        }
+    }
+    if !marked_any && let Some(guid) = current_guid {
+        mark_camera_failure(collectors, guid, reason);
+    }
+    Ok(())
 }
 
 fn attach_raw_result(shot: &mut ShotCollector, raw_results: &Arc<Mutex<HashMap<String, String>>>) {
@@ -512,15 +761,17 @@ fn attach_raw_result(shot: &mut ShotCollector, raw_results: &Arc<Mutex<HashMap<S
 
 fn try_send_hints(
     shot: &mut ShotCollector,
-    gvp: &mut GvpClient<std::net::TcpStream>,
-    gvp_connected: bool,
+    gvp: Option<&mut GvpClient<TcpStream>>,
     range_m: f64,
-) {
-    if shot.hints_sent || !gvp_connected {
-        return;
+) -> Result<(), GvpError> {
+    if shot.hints_sent || shot.camera_failed || !shot.camera_trigger_sent {
+        return Ok(());
     }
+    let Some(gvp) = gvp else {
+        return Ok(());
+    };
     let Some(flight) = shot.flight.as_ref() else {
-        return;
+        return Ok(());
     };
     let start_time = shot
         .ball_prc_pages
@@ -530,15 +781,12 @@ fn try_send_hints(
         .map_or(DEFAULT_START_TIME, |point| f64::from(point.time) * 26.7e-6);
     let hints =
         compute_trajectory_hints(flight, shot.club.as_ref(), &shot.guid, range_m, start_time);
-    if let Some(club_track) = hints.club_track
-        && let Err(error) = gvp.send_club_track(&club_track)
-    {
-        shot.add_warning(format!("发送 Expected Club Track 失败: {error}"));
+    if let Some(club_track) = hints.club_track {
+        gvp.send_club_track(&club_track)?;
     }
-    if let Err(error) = gvp.send_ball_track(&hints.ball_track) {
-        shot.add_warning(format!("发送 Expected Ball Track 失败: {error}"));
-    }
+    gvp.send_ball_track(&hints.ball_track)?;
     shot.hints_sent = true;
+    Ok(())
 }
 
 struct TrajectoryHints {
@@ -1049,8 +1297,20 @@ fn validation_warnings(shot: &ShotCollector) -> Vec<String> {
     if shot.shot_lifecycle_complete && shot.flight.is_none() && shot.flight_v1.is_none() {
         push_unique(&mut warnings, "未收到 D4 或 E8 飞行结果。");
     }
-    if shot.shot_lifecycle_complete && shot.camera_result.is_none() {
+    if shot.shot_lifecycle_complete && shot.camera_result.is_none() && !shot.camera_failed {
         push_unique(&mut warnings, "GVP RESULT 尚未到达；已先保存雷达文件。");
+    }
+    if shot.camera_timed_out {
+        push_unique(
+            &mut warnings,
+            "GVP RESULT 超过 10 秒未到达；已重置相机连接，雷达采集和下一杆未被阻塞。",
+        );
+    }
+    if shot.camera_failed {
+        push_unique(
+            &mut warnings,
+            "本杆相机流程失败或被跳过；雷达采集保持独立运行。",
+        );
     }
     if shot.camera_result.is_some() && shot.gvp_result_raw.is_none() {
         push_unique(
@@ -1149,6 +1409,9 @@ fn write_summary(path: &Path, shot: &ShotCollector) -> AppResult<()> {
             "clubPagesRequested": shot.prc_fetch.club_pages_requested,
             "clubPagesReceived": shot.prc_fetch.club_pages_received,
         },
+        "cameraTriggerSent": shot.camera_trigger_sent,
+        "cameraTimedOut": shot.camera_timed_out,
+        "cameraFailed": shot.camera_failed,
         "cameraResultReceived": shot.camera_result.is_some(),
         "rawGvpJsonCaptured": shot.gvp_result_raw.is_some(),
         "ballPrcPageCount": shot.ball_prc_pages.len(),

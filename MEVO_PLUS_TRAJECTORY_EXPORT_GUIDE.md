@@ -39,6 +39,11 @@ WSL2 Ubuntu 只作为备选运行方式，单独见 [`WSL_UBUNTU_ALTERNATIVE.md`
 8. 在 `PROCESSED` 后主动重取全部 0xEC 球 PRC 页面；
 9. 在取得最终 ClubResult 后主动重取全部 0xEE 杆头 PRC 页面；
 10. 分页短页、预期点数、超时和 64 页安全上限控制，失败后仍继续 re-arm。
+11. 雷达与相机生命周期解耦：相机忙、超时或断线不会阻止雷达完成本杆和准备下一杆；
+12. GVP RESULT 等待 10 秒后放弃本杆相机结果并重置连接；
+13. GVP 断线后仅在雷达已经 Arm 时短超时重连，恢复到 `IDLE` 后再参与后续杆；
+14. `ShotComplete` 后明确打印雷达已经重新 Arm，相机不可用时后续杆自动降级为 radar-only。
+15. 默认不再逐行打印普通 GVP 调试日志，只保留状态、结果和明显失败信息，减少 Windows 控制台输出对雷达轮询的干扰。
 
 ### 仍需真机确认
 
@@ -195,6 +200,9 @@ C:\MevoData\
     "clubPagesReceived": 5
   },
   "cameraResultReceived": true,
+  "cameraTriggerSent": true,
+  "cameraTimedOut": false,
+  "cameraFailed": false,
   "ballPrcPointCount": 80,
   "clubPrcPointCount": 14,
   "cameraBallPointCount": 10,
@@ -206,6 +214,8 @@ C:\MevoData\
 ```
 
 同时嵌入 D4/E8、Club、Spin、SpeedProfile 和分页状态。`radarComplete` 只有在 Shot 生命周期完成、球与杆头分页完成、存在飞行结果、存在球 PRC，且已知的预期点数检查通过时才为 true。
+
+相机状态不参与 `radarComplete`。即使 `cameraTimedOut=true` 或 `cameraFailed=true`，雷达仍会完成保存和 re-arm；这些字段只说明这一杆的相机结果是否可用。
 
 ### 3.6 雷达 CSV
 
@@ -247,7 +257,7 @@ u_px,v_px,radius_px,circularity_factor,shutter_time_ms
 - GVP RESULT 晚到时再补写相机文件；
 - 同一路径存在时创建新的 Session，不覆盖旧数据；
 - 相机无结果时保留雷达文件，并在 summary 记录原因；
-- 每次 ShotComplete 或 GVP RESULT 到达时立即更新文件；当前无额外依赖的最小版尚未实现 Ctrl+C 时强制保存尚未完成的 partial shot；
+- 每次 ShotComplete 或 GVP RESULT 到达时立即更新文件；GVP 断线或等待 RESULT 超过 10 秒时也会更新 summary；当前无额外依赖的最小版尚未实现 Ctrl+C 时强制保存尚未完成的 partial shot；
 - 密码、授权证书和不必要的个人信息不写入导出目录。
 
 ### 3.9 实施后的完整项目结构
@@ -672,7 +682,7 @@ TcpTestSucceeded : True
 
 - 5100 为 `True`：雷达服务可连接，这是启动导出器的必要条件；
 - 1258 为 `True`：GVP 相机服务当前已经可连接；
-- 5100 为 `True`、1258 为 `False`：先不要判定失败。导出器会通过 5100 启动并切换相机模式，然后才连接 1258；可以继续运行一次，以程序是否显示 `GVP connected. Waiting for shots...` 为最终判断；
+- 5100 为 `True`、1258 为 `False`：先不要判定失败。导出器会通过 5100 启动并切换相机模式，然后才连接 1258；可以继续运行一次，以程序是否显示 `GVP connected. Waiting for camera IDLE...` 为最终判断；
 - 两者都为 `False`：通常是 Wi-Fi 连错、其他 App 正占用设备、VPN/路由干扰，或者 Mevo+ 尚未启动完成。
 
 端口失败时按以下顺序排查：
@@ -820,6 +830,8 @@ ShotComplete 先写雷达；RESULT 晚到时补写相机并更新 summary
 Expected Track 只是给设备内相机跟踪器提供搜索区域，不会把雷达点与相机点融合，也不会改变导出的原始测量值。
 导出器把 GVP 的 `save_videos_enabled` 设为 `false`，并忽略视频可用通知，不下载或保存视频。
 
+雷达循环不等待 GVP RESULT。相机在上一杆仍为 `PROCESSING`、连接已经断开或尚未恢复到 `IDLE` 时，新一杆仍会正常走雷达流程，只是该杆跳过 GVP Trigger 并在 summary 中标记为 radar-only。GVP 结果超过 10 秒未到达时，程序关闭该相机连接并后台重连，不影响雷达端继续接收击球。
+
 ## 9. Windows 10 第一次采集：逐步照做
 
 第 4 节只需安装一次。以后每次采集，从本节开始操作即可。
@@ -939,7 +951,9 @@ Configuring mode=indoor range=2743mm height=25mm...
 Starting camera (standard warmup)...
 Switching camera to Raw Fusion...
 Connecting to GVP at 192.168.2.1:1258...
-GVP connected. Waiting for shots...
+GVP connected. Waiting for camera IDLE...
+[gvp] status=IDLE
+Camera ready for the next shot.
 ARMED - hit a ball.
 ```
 
@@ -958,8 +972,8 @@ ARMED - hit a ball.
 ```text
 Shot #1 triggered; guid=...
 Shot #1 radar saved: ball=... club=... radarComplete=...
+Radar re-armed; ready for the next shot.
 Shot #1 camera files saved.
-ARMED - hit a ball.
 ```
 
 含义如下：
@@ -967,9 +981,10 @@ ARMED - hit a ball.
 - `triggered`：设备识别到一杆，并为它创建了唯一 GUID；
 - `radar saved`：这一杆的雷达 CSV 和摘要已经写盘；
 - `camera files saved`：对应相机跟踪结果已经写盘；
-- 再次出现 `ARMED - hit a ball.`：可以打下一杆。
+- `Radar re-armed; ready for the next shot.`：雷达已经可以接收下一杆；
+- `Camera ready for the next shot.`：相机也已回到 `IDLE`。
 
-不要在程序尚未重新显示 `ARMED` 时连续击下一球。第一次测试建议只打一杆，确认输出完整后再做连续采集。
+雷达优先时，只要看到 `Radar re-armed` 就可以打下一杆；如果尚未看到 `Camera ready`，下一杆会自动降级为 radar-only，不会阻塞雷达。第一次测试仍建议只打一杆，确认输出完整后再做连续采集。
 
 `radarComplete=false` 不等于文件没保存，它表示完整性检查发现缺页、点数不一致或超时；应查看该杆的 `summary.json` 和 `session.log`。
 
@@ -1004,7 +1019,7 @@ gvp_result.json
 
 1. 等最后一杆显示 `radar saved`；
 2. 最好再等待 `camera files saved`；
-3. 确认程序重新出现 `ARMED - hit a ball.`；
+3. 确认程序显示 `Radar re-armed`；相机文件也需要时，最好再等待 `Camera ready for the next shot.`；
 4. 在正在运行程序的 PowerShell 窗口中按 `Ctrl + C`；
 5. 等 PowerShell 回到 `PS C:\...>` 提示符；
 6. 再关闭窗口、关闭 Mevo+ 或切换 Wi-Fi。
@@ -1097,6 +1112,9 @@ binary.set_prc_pagination_enabled(true);
 ### 连续运行与边界
 
 - 连续 50 杆不丢失 re-arm，需要真机验证；
+- 相机忙、RESULT 超时或 GVP 断线时，雷达仍应保存并 re-arm；
+- 相机未处于 `IDLE` 时，新一杆跳过 GVP Trigger，不等待相机；
+- GVP 断线后自动短超时重连，重连失败不终止雷达采集；
 - 当前任一文件写入失败会终止程序并显示错误，避免静默丢数据；
 - Ctrl+C 不保证保存尚未进入 ShotComplete 且没有 GVP RESULT 的 partial shot；
 - 输出目录不会覆盖旧 Session；
@@ -1207,7 +1225,7 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\Documents\MevoData"
 
 启动导出器之前测得 1258 为 `False`，不一定代表最终失败：程序会先通过 5100 完成握手、Standard 相机预热和 Raw Fusion 切换，然后才连接 1258。因此只要 5100 为 `True`，可以继续运行一次。
 
-如果程序已经显示 `Switching camera to Raw Fusion...`，随后仍在 `Connecting to GVP at 192.168.2.1:1258...` 阶段报错，才说明当前 GVP 相机服务确实无法使用。此时检查设备固件、相机状态和账号已购买功能。本项目不会绕过设备授权。不能把端口 1258 随意改成 8080；8080 是视频流，不是本项目使用的相机跟踪结果端口。
+如果程序已经显示 `Switching camera to Raw Fusion...`，随后仍在 `Connecting to GVP at 192.168.2.1:1258...` 阶段报错，程序会继续 radar-only 并后台重连。此时检查设备固件、相机状态和账号已购买功能。本项目不会绕过设备授权。不能把端口 1258 随意改成 8080；8080 是视频流，不是本项目使用的相机跟踪结果端口。
 
 ### 14.8 参数报错
 
@@ -1234,8 +1252,20 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\Documents\MevoData"
 打开该杆的 `summary.json`，查看 `cameraResultReceived` 和 `warnings`，再检查：
 
 - 1258 端口是否连通；
-- 是否打印过 `GVP connected. Waiting for shots...`；
+- 是否打印过 `GVP connected. Waiting for camera IDLE...` 和 `Camera ready for the next shot.`；
 - GVP RESULT 是否因为固件、授权、相机标定或跟踪失败而没有返回；
 - `session.log` 是否记录 `GVP disconnected` 或未匹配 GUID。
 
 即使相机结果失败，已经完成的雷达文件仍会保留。
+
+### 14.11 出现 `GVP disconnected` 或相机长期停在 `PROCESSING`
+
+新版导出器会立即保留雷达流程，并打印：
+
+```text
+Radar re-armed; next shot is allowed. Camera is unavailable or still busy, so the next shot may be radar-only.
+```
+
+此时可以继续击球，雷达不会等待相机。雷达处于 Arm 状态时，程序每隔 2 秒尝试恢复 GVP；重连成功后显示 `GVP reconnected`，收到 `IDLE` 后显示 `Camera ready for the next shot.`。
+
+如果一杆触发后 10 秒仍没有 RESULT，程序会在 `summary.json` 中写入 `cameraTimedOut=true` 和 `cameraFailed=true`，重置 GVP 连接并继续雷达采集。该杆无法补出相机 CSV，但不会影响下一杆的雷达文件。

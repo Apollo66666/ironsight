@@ -109,10 +109,10 @@ impl<S: Read + Write> GvpConnection<S> {
                 Ok(0) => return Err(GvpError::Disconnected),
                 Ok(n) => {
                     let mut messages = self.splitter.feed(&self.read_buf[..n]);
+                    // `pending` is drained with `pop()`, so store messages in
+                    // reverse order to preserve their original wire order.
+                    messages.reverse();
                     if let Some(first) = messages.pop() {
-                        // Stash extras (in arrival order — messages was built
-                        // left-to-right, pop takes from the end, so reverse).
-                        messages.reverse();
                         self.pending.extend(messages);
                         let msg = GvpMessage::decode(&first)?;
                         if let Some(cb) = self.on_recv.as_mut() {
@@ -129,6 +129,33 @@ impl<S: Read + Write> GvpConnection<S> {
                     return Ok(None);
                 }
                 Err(e) => return Err(GvpError::Io(e)),
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::*;
+
+    #[test]
+    fn recv_preserves_multiple_messages_wire_order() {
+        let bytes = concat!(
+            "{\"level\":1,\"message\":\"first\",\"type\":\"LOG\",\"version\":1}\0",
+            "{\"level\":1,\"message\":\"second\",\"type\":\"LOG\",\"version\":1}\0",
+            "{\"level\":1,\"message\":\"third\",\"type\":\"LOG\",\"version\":1}\0"
+        )
+        .as_bytes()
+        .to_vec();
+        let mut conn = GvpConnection::new(Cursor::new(bytes));
+
+        for expected in ["first", "second", "third"] {
+            let message = conn.recv().unwrap().unwrap();
+            match message {
+                GvpMessage::Log(log) => assert_eq!(log.message, expected),
+                other => panic!("expected LOG, got {other:?}"),
             }
         }
     }
