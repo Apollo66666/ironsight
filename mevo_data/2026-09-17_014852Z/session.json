@@ -1,0 +1,19 @@
+{
+  "activePaginationEnabled": true,
+  "binaryAddress": "192.168.2.1:5100",
+  "cameraResultCount": 0,
+  "completedShotCount": 1,
+  "exporterVersion": "0.2.2",
+  "gvpAddress": "192.168.2.1:1258",
+  "mode": "outdoor",
+  "modeCode": 9,
+  "outputDirectory": "C:\\Users\\ZhaoMR\\Desktop\\Code\\ironsight\\mevo_data\\2026-09-17_014852Z",
+  "radarCal": {
+    "heightMm": 25,
+    "rangeMm": 2438
+  },
+  "schemaVersion": 1,
+  "shotCount": 1,
+  "startedEpoch": 1789609732.419201,
+  "updatedEpoch": 1789609852.9750881
+}

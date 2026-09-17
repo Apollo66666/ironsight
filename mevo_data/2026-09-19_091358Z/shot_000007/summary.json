@@ -1,0 +1,423 @@
+{
+  "activePaginationEnabled": true,
+  "ballPrcPageCount": 52,
+  "ballPrcPointCount": 205,
+  "cameraBallPointCount": 7,
+  "cameraClubPointCount": 8,
+  "cameraFailed": false,
+  "cameraReferencePointCount": 4,
+  "cameraResultReceived": true,
+  "cameraTimedOut": false,
+  "cameraTriggerSent": true,
+  "club": {
+    "attackAngleDeg": -2.44,
+    "clubAzimuthDeg": 4.83,
+    "clubElevationDeg": -2.34,
+    "clubHeightM": -0.031,
+    "clubOffsetM": 0.206,
+    "clubToBallTimeMs": 6.82,
+    "dispersionCorrection": 0.663,
+    "dynamicLoftDeg": 31.66,
+    "faceAngleDeg": 0.96,
+    "flags": 40960,
+    "numClubPrcPoints": 64,
+    "polyCoeffs": [
+      [
+        0.0,
+        0.0003242331885091758,
+        0.0030477919719862526
+      ],
+      [
+        0.055832955061280075,
+        0.0,
+        26.76149406653265
+      ],
+      [
+        -0.008494909538940406,
+        30.03851890279489,
+        182.61370857921017
+      ],
+      [
+        -0.008494909538940406,
+        17.269762012839635,
+        12.718889825562545
+      ],
+      [
+        -0.031126386096880877,
+        -1.2844821995979507,
+        259.38441086829647
+      ],
+      [
+        -0.031126386096880877,
+        -0.7384735101484988,
+        129.89021464237078
+      ],
+      [
+        0.20608261461643212,
+        0.8938460540820958,
+        181.93560728876207
+      ],
+      [
+        0.20608261461643212,
+        0.5139096037870436,
+        86.54004279878089
+      ],
+      [
+        -0.03255301212632125,
+        -0.011672394786330328,
+        0.4919265936061215
+      ],
+      [
+        -0.03255301212632125,
+        -0.011672394786330328,
+        0.4919265936061215
+      ],
+      [
+        0.19687439206277155,
+        0.04351209389793139,
+        0.33538681019389144
+      ],
+      [
+        0.19687439206277155,
+        0.04351209389793139,
+        0.33538681019389144
+      ]
+    ],
+    "polyScale": 15421,
+    "postClubSpeedMps": 18.3,
+    "postImpactTimeMs": 39.21,
+    "preClubSpeedMps": 27.95,
+    "preImpactTimeMs": -40.14,
+    "smashFactor": 1.317,
+    "strikeDirectionDeg": 1.7,
+    "swingPlaneHorizontalDeg": 3.31,
+    "swingPlaneVerticalDeg": 56.59
+  },
+  "clubPrcPageCount": 0,
+  "clubPrcPointCount": 0,
+  "duplicateBallPrcPoints": 3,
+  "duplicateClubPrcPoints": 0,
+  "expectedBallPrcPointCount": 205,
+  "expectedClubPrcPointCount": 64,
+  "flight": {
+    "backspinRpm": 4484,
+    "carryDistanceM": 95.029,
+    "clubAttackAngleDeg": -2.448,
+    "clubEffectiveLoftDeg": 31.661,
+    "clubFaceAngleDeg": 0.967,
+    "clubStrikeDirectionDeg": 1.705,
+    "clubSwingPlaneRotationDeg": 3.32,
+    "clubSwingPlaneTiltDeg": 56.596,
+    "clubheadSpeedMps": 27.957,
+    "clubheadSpeedPostMps": 18.307,
+    "flightTimeSeconds": 4.177,
+    "landingPositionM": [
+      95.016,
+      0.0,
+      1.542
+    ],
+    "landingSpinRpm": [
+      115,
+      -80,
+      -4044
+    ],
+    "landingVelocityMps": [
+      17.339,
+      -13.223,
+      0.159
+    ],
+    "launchAzimuthDeg": 1.176,
+    "launchElevationDeg": 22.015,
+    "launchSpeedMps": 36.847,
+    "maximumHeightM": 14.577,
+    "polyScale": 117666,
+    "polyX": [
+      0.0,
+      33.99462886475278,
+      -4.8120782554008805,
+      0.689995410738871,
+      -0.04368296704230619
+    ],
+    "polyY": [
+      0.08788435061955026,
+      13.88545544167389,
+      -3.1382047490354052,
+      -0.13560416772899564,
+      0.02149303962062108
+    ],
+    "polyZ": [
+      0.19986232216613126,
+      0.6934713511124709,
+      -0.1686808423843761,
+      0.02654122686247514,
+      -0.0017932112929818298
+    ],
+    "riflespinRpm": 0,
+    "shotCounter": 7,
+    "sidespinRpm": -96,
+    "startPositionM": [
+      0.0,
+      0.088,
+      0.2
+    ],
+    "trackTimeSeconds": 0.63
+  },
+  "flightV1": {
+    "acceleration": 0.08,
+    "azimuthDeg": 1.176,
+    "backspinRpm": 6941,
+    "ballVelocityMps": 36.847,
+    "clubStrikeDirectionDeg": 0.0,
+    "clubVelocityMps": 0.0,
+    "distanceM": 93.978,
+    "drag": 0.0,
+    "elevationDeg": 22.015,
+    "flightTimeSeconds": 4.282,
+    "heightM": 15.238,
+    "lateralM": 2.128,
+    "polyScale": 118047,
+    "polyX": [
+      0.0,
+      33.88469846755953,
+      -5.446864384524808,
+      0.882606080628902,
+      -0.061170550712851664
+    ],
+    "polyY": [
+      0.08788872228857997,
+      13.941912966869129,
+      -2.899760264979203,
+      -0.20203817123688023,
+      0.027497522173371623
+    ],
+    "polyZ": [
+      0.19986954348691624,
+      0.6953755707472448,
+      -0.11171821393173906,
+      0.018086016586613806,
+      -0.001253737917947936
+    ],
+    "shotCounter": 7,
+    "sidespinRpm": 0,
+    "trackedTimeSeconds": 25.675
+  },
+  "guid": "{6aae52ef-0000-40a7-afd4-0a7cb1400007}",
+  "pagination": {
+    "ballComplete": true,
+    "ballPageLimitReached": false,
+    "ballPagesReceived": 52,
+    "ballPagesRequested": 52,
+    "ballTimedOut": false,
+    "clubComplete": false,
+    "clubPageLimitReached": false,
+    "clubPagesReceived": 0,
+    "clubPagesRequested": 1,
+    "clubTimedOut": true
+  },
+  "radarComplete": false,
+  "rawGvpJsonCaptured": true,
+  "schemaVersion": 1,
+  "shotId": 7,
+  "shotLifecycleComplete": true,
+  "speedProfile": {
+    "flags": 1,
+    "numPost": 21,
+    "numPre": 43,
+    "scaleFactor": 100,
+    "speedsMps": [
+      6.6,
+      7.26,
+      8.2,
+      9.08,
+      9.9,
+      10.77,
+      11.62,
+      12.44,
+      13.17,
+      13.87,
+      14.64,
+      15.36,
+      16.02,
+      16.73,
+      17.52,
+      18.38,
+      18.98,
+      19.32,
+      19.88,
+      20.62,
+      21.03,
+      21.22,
+      20.89,
+      22.66,
+      22.0,
+      23.12,
+      23.46,
+      23.33,
+      23.99,
+      24.15,
+      24.62,
+      25.19,
+      25.96,
+      26.56,
+      26.5,
+      26.26,
+      26.42,
+      26.9,
+      26.03,
+      26.79,
+      27.41,
+      26.49,
+      0.0,
+      25.9,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      18.59,
+      17.92,
+      17.61,
+      17.42
+    ],
+    "timeIntervalSeconds": 0.0008533332729712129
+  },
+  "spin": {
+    "amSpinRpm": 4675,
+    "antennaData": [
+      [
+        {
+          "peak": 0.033,
+          "snr": 11,
+          "spinRpm": 18076
+        },
+        {
+          "peak": 0.026,
+          "snr": 9,
+          "spinRpm": 8083
+        },
+        {
+          "peak": 0.022,
+          "snr": 8,
+          "spinRpm": 10726
+        }
+      ],
+      [
+        {
+          "peak": 0.033,
+          "snr": 11,
+          "spinRpm": 18107
+        },
+        {
+          "peak": 0.025,
+          "snr": 9,
+          "spinRpm": 8036
+        },
+        {
+          "peak": 0.024,
+          "snr": 9,
+          "spinRpm": 13713
+        }
+      ],
+      [
+        {
+          "peak": 0.034,
+          "snr": 11,
+          "spinRpm": 18211
+        },
+        {
+          "peak": 0.028,
+          "snr": 10,
+          "spinRpm": 13653
+        },
+        {
+          "peak": 0.022,
+          "snr": 7,
+          "spinRpm": 4672
+        }
+      ],
+      [
+        {
+          "peak": 0.025,
+          "snr": 8,
+          "spinRpm": 18181
+        },
+        {
+          "peak": 0.024,
+          "snr": 8,
+          "spinRpm": 7922
+        },
+        {
+          "peak": 0.02,
+          "snr": 6,
+          "spinRpm": 4508
+        }
+      ],
+      [
+        {
+          "peak": 0.031,
+          "snr": 10,
+          "spinRpm": 18148
+        },
+        {
+          "peak": 0.02,
+          "snr": 7,
+          "spinRpm": 13643
+        },
+        {
+          "peak": 0.02,
+          "snr": 7,
+          "spinRpm": 8013
+        }
+      ]
+    ],
+    "aodSpinRpm": 0,
+    "launchSpinRpm": 4486,
+    "liftSpinRpm": 0,
+    "pllSpinRpm": 6941,
+    "pmSpinConfidence": 100,
+    "pmSpinFinalRpm": 4486,
+    "pmSpinRawRpm": 4531,
+    "pmSpinRpm": 4486,
+    "spinAxisDeg": -1.2,
+    "spinFlags": 5,
+    "spinMethod": 3,
+    "spinValidateExpectedRpm": 4486,
+    "spinValidateHighRpm": 0,
+    "spinValidateLowRpm": 0,
+    "spinValidateScaling": 0,
+    "version": 137
+  },
+  "triggerEpoch": 1789809391.1759439,
+  "warnings": [
+    "杆头 PRC 主动分页未完成。",
+    "杆头 PRC 分页请求超时，已继续 re-arm。",
+    "杆头 PRC 点数少于 ClubResult：收到 0，期望 64。"
+  ]
+}

@@ -1,0 +1,6 @@
+1789609424.109262 session started; options=Options { device: 192.168.2.1:5100, mode_name: "outdoor", mode: 9, range_mm: 2438, height_mm: 25, output: "C:\\Users\\ZhaoMR\\Desktop\\Code\\ironsight\\mevo_data" }
+1789609426.903117 handshake complete; device=Mevo+ (0x80); dsp=0.43 FS Mevo 2; avr=0.38   M2 TR 03 May 28 2026 20:50:01; pi=24 2024-05-09 13-30-00
+1789609447.118967 camera and GVP ready; arming radar
+1789609471.555792 shot 1 trigger guid={6aab45ff-0000-4211-aff0-2115e3cc0001}
+1789609472.488288 GVP disconnected; continuing radar-only capture
+1789609473.313884 shot 1 radar files saved
