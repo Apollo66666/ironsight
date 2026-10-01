@@ -1,0 +1,130 @@
+{
+  "session": "ironsight/mevo_data/2026-09-19_091358Z",
+  "models": [
+    "original",
+    "optimized"
+  ],
+  "coefficients_fitted": false,
+  "environment": {
+    "temp_f": 59,
+    "humidity_pct": 0,
+    "pressure_inhg": 29.92,
+    "elevation_ft": 0,
+    "wind_mph": 0
+  },
+  "time": {
+    "impact_time_s": 0,
+    "radar_time_offset_s": 0,
+    "sensitivity_offsets_s": [
+      0,
+      0.01,
+      0.02
+    ],
+    "basis": "n, relative to first ball radar point, assumed impact",
+    "per_shot_fitting": false
+  },
+  "geometry": {
+    "D4_axes": [
+      "forward",
+      "up",
+      "lateral"
+    ],
+    "libgolf_axes": [
+      "lateral",
+      "forward",
+      "up"
+    ],
+    "radar_rotation": "identity assumed",
+    "initial_slant_range_m": 2.438,
+    "radar_origin": "D4 startPositionM - initial_slant_range_m * first raw LOS unit vector",
+    "sidespin": "libgolf sidespin = -Mevo D4 sidespin",
+    "extrinsics_independently_measured": false
+  },
+  "dt_s": 0.01,
+  "convergence_dt_s": 0.001,
+  "n_shots": 6,
+  "n_raw_points": 1233,
+  "included_shot_ids": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "excluded_shot_ids": [
+    1
+  ],
+  "exclusion_reason": "User-requested exclusion after observing Shot 1 optimized Carry APE 10.58%; post-hoc subset, not evidence of invalid measurement",
+  "n_evaluated_points_per_model": 1227,
+  "exclusion": "Shot 1 excluded from both models; first point per retained shot used for LOS anchoring; no other point removal",
+  "coefficient_q24_indices": [
+    0,
+    1,
+    2,
+    6,
+    7,
+    8,
+    12,
+    13,
+    14,
+    18,
+    20
+  ],
+  "python": "3.10.20",
+  "numpy": "2.2.6",
+  "pandas": "2.3.3",
+  "matplotlib": "3.10.9",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "sha256": {
+    "ironsight/mevo_data/2026-09-19_091358Z/session.json": "a4f916cab6c7fbedee02e3850f6bc3ce89a552e0af8cf581b8df3d0394b01681",
+    "offline_model/data_and_model/validation_6_filtered_dataset/global_optimization_outputs/filtered_665_11_parameter.json": "d3ad8a8a158b8e1d19809f9aeb4400e071e369ac50f927621d19a0d60ed2fd1a",
+    "offline_model/data_and_model/validation_5_environment/optimization_workspace/libgolf_environment_runner.cpp": "6a9d4c76135a2b8f0104aae77b0ded30c7a3180507fe397bff4484f3b1151e29",
+    "ironsight/mevo_data/2026-09-19_091358Z/libgolf_default_evaluation/trajectory_main.cpp": "ac134a6f485e6c9c8daeee9b34357432093f0c2af6f21d8754d92bc2fd2dee52",
+    "ironsight/mevo_data/2026-09-19_091358Z/libgolf_default_evaluation/evaluate_mevo_models.py": "734163b8fe006d2e176e4e813727978fd361eaade69662e9a5934689b467220b",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000002/summary.json": "62dff8dac5e5e872ce67485d94312945c1e48b78668331f71b6ece4821009399",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000002/radar_ball_raw.csv": "221d50dbf64ac8d989542aca11439c9a9d653f0cb14c971ef876bddf76d86291",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000002/camera_ball_raw.csv": "bbbb61089f5003ac05d6e432106573752fdaa28e1539d4e3bb43b7763667b176",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000003/summary.json": "cc3858bdf0b672b847cd92c6f0588b3d3ed7c43fe7d55a3471b457a51d58c7e7",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000003/radar_ball_raw.csv": "6bc2718aa03e2a082710013b6d0246e1feca39d822b9ffb8e04420947e6ea0d0",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000003/camera_ball_raw.csv": "0fc257d1dd8573bfef39de6c2ddc1299707c50abe5fb1ab2490dbba692a2adf9",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000004/summary.json": "761cbca7244bf9fc95c4d2ab96108f667fc764269be08f0ab03dbfe5eb49a389",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000004/radar_ball_raw.csv": "0f4fddfa7f5c8ef7e20660d6f6610568bf9805714d565b0cb8a1711625396752",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000004/camera_ball_raw.csv": "45921e37c9d03e357f3a702fbe6e23b4c6137aab7cdc1e0167fab30a514cd19a",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000005/summary.json": "ae54cdefe895588ba2947d03ec4bb30cb20fa5e4c7d4f869adb2e727ccdde0e4",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000005/radar_ball_raw.csv": "aa70c1da93dab20172c70e61f6c8c9d2154de9a120b92045b39c62ea2027be8b",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000005/camera_ball_raw.csv": "6de72b5af23326212d39ac73f69ee069871abc8f23d2098e3f2c405eb4b23915",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000006/summary.json": "634e9115c919857cadd44b352a16f8b81eaf71755d8d554b838548b842307cec",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000006/radar_ball_raw.csv": "235ec1eb34e20b28be6bd6c9c5340d697a07b2660f0407cdbe7ccacd8e105769",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000006/camera_ball_raw.csv": "51accff6d71e9da3a571f7c265f3cacb01bd770a1e071e8d3d01e683ad38340a",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000007/summary.json": "bd61b37c18f2fb7ba0c3b6b4cc09a75a905aba807f1c474180e8a4869b5ae451",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000007/radar_ball_raw.csv": "0164bf33c46d4d57018e08e81215e57e572540920c2beb539fbf92f50cabb2f2",
+    "ironsight/mevo_data/2026-09-19_091358Z/shot_000007/camera_ball_raw.csv": "7adcae4bcfba9a9be7c28d5f415ec278a2ce54a41d50c31652dde82232439717",
+    "offline_model/data_and_model/model/libgolf/include/AerodynamicModel.hpp": "72eff442623307285811be7e1cae9bb413a69309385e625dc5492eb574359b8c",
+    "offline_model/data_and_model/model/libgolf/include/BallProperties.hpp": "718fcdcffb0d671c166730c9089ac24d8fa992325ff356c0c07cc93112e3c3c2",
+    "offline_model/data_and_model/model/libgolf/include/BallState.hpp": "a07fea6cc01e7c1c12569eab38dc3ba7686e89dd5c7f9b78d314b00063d38fe3",
+    "offline_model/data_and_model/model/libgolf/include/BounceModel.hpp": "400e296e1f2c2e1c82973a38ffe78503c86b579a06d53053c4edbaed438aa006",
+    "offline_model/data_and_model/model/libgolf/include/DefaultAerodynamicModel.hpp": "7debd6461173ef05f6ca087046ad0c8b9f8a6f6338e1fd8b46ce67ccfac9b27c",
+    "offline_model/data_and_model/model/libgolf/include/DefaultBounceModel.hpp": "b649685abead55146ccbe9b3f9b57db5722010cf8ee666e0dfa2cf00f09df343",
+    "offline_model/data_and_model/model/libgolf/include/DefaultIntegrator.hpp": "c766a29fff11576f1f7f00838e1f7216a867928d63a41b96f58933dbae74212f",
+    "offline_model/data_and_model/model/libgolf/include/DefaultRollModel.hpp": "b9173501a5e4488eb2a563937912ffeefdb94648f74f54cb014a839c1c311025",
+    "offline_model/data_and_model/model/libgolf/include/FlightPhase.hpp": "f5b5bf69722b8bef886f8d4d3595e87999f488db45486596097c2470f4c2e444",
+    "offline_model/data_and_model/model/libgolf/include/FlightSimulator.hpp": "4cc166c8c3dc672adb100be71110415bb67a8e32a082a60e1d673307941a5e3e",
+    "offline_model/data_and_model/model/libgolf/include/Integrator.hpp": "107cfb0b9471131896bf038c4b33f5d27840f92a4e4fad0abdbff7d3bde2ec8d",
+    "offline_model/data_and_model/model/libgolf/include/RollModel.hpp": "52fbec0fddfa785b7e17f22d1c0989f789aa5e695abe303ca5442e2d5c40a332",
+    "offline_model/data_and_model/model/libgolf/include/ShotPhysicsContext.hpp": "18972ef324dc2efe10a4c9b479b75f487112049a00d39ea14f30e9ee484b0753",
+    "offline_model/data_and_model/model/libgolf/include/atmospheric_data.hpp": "e83e4ab96e86b4ef741481d7337691076db6f7d03a97dd88acc795d665f050a9",
+    "offline_model/data_and_model/model/libgolf/include/ground_physics.hpp": "c625550ef6e7d4b395d738ef7cc69b1177106589d87f5b68a6f55c569c236523",
+    "offline_model/data_and_model/model/libgolf/include/ground_surface.hpp": "d7daf6c742ecadb3805ed355cb32d4d381a071d4fee251df4c52d026a3c97099",
+    "offline_model/data_and_model/model/libgolf/include/launch_data.hpp": "29cc01713f3da74339e6d1ab5236db073ad3a3ead50abc8fc5912b6684d9e10f",
+    "offline_model/data_and_model/model/libgolf/include/libgolf.hpp": "4de8fe9f868aef0373320c735f9981dcb6650f6a61b53deb14842dec4128acd4",
+    "offline_model/data_and_model/model/libgolf/include/math_utils.hpp": "4db53aeac56087948de4156b923239cec1fd16bbc4bf090f1114c98c49fb63e0",
+    "offline_model/data_and_model/model/libgolf/include/physics_constants.hpp": "8e139654e37444d43f04d7a641827c0e0663a68345327354cee6bd9e7d43ddc7",
+    "offline_model/data_and_model/model/libgolf/include/terrain_interface.hpp": "577c3814a620252b93e20a0741fbfa2334d1dd6fafe9d2eafc4415c66c628732",
+    "offline_model/data_and_model/model/libgolf/src/FlightPhase.cpp": "89746fb5c3e273feead9ace00edd03da1d17a2073d5118d3e1b4d5c602619316",
+    "offline_model/data_and_model/model/libgolf/src/FlightSimulator.cpp": "3d3ed0b22cbb8bc5341b80278b926df66b56fb15e624b096f4a202212354d39e",
+    "offline_model/data_and_model/model/libgolf/src/ShotPhysicsContext.cpp": "4750bba1891680e628954452f2e6b0701558cdcda816b98b7f92a838660ccf62",
+    "offline_model/data_and_model/model/libgolf/src/ground_physics.cpp": "2532973056e35cf75f38bc7bd67ceaf4642a8b61a524d414e4d253e29932adf3",
+    "offline_model/data_and_model/model/libgolf/src/math_utils.cpp": "9e98d109e999b5f9219cfaaa3423a75f0778a0759de3d640e7de2a4ce5230556"
+  }
+}
