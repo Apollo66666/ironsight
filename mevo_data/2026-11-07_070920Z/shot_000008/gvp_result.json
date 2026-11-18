@@ -1,0 +1,179 @@
+{
+  "guid": "{6aeecf89-0000-4138-aa64-138c0fd80008}",
+  "cameraCalibration": {
+    "cx": 0.0,
+    "cy": 0.0,
+    "fx": 0.0,
+    "fy": 0.0,
+    "width": 0,
+    "height": 0,
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotation": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distCoeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "tracks": [
+    {
+      "trackId": 0,
+      "frameNumber": [],
+      "timestamp": [],
+      "u": [],
+      "v": [],
+      "radius": [],
+      "circularityFactor": [],
+      "shutterTime_ms": []
+    },
+    {
+      "trackId": 1,
+      "frameNumber": [],
+      "timestamp": [],
+      "u": [],
+      "v": [],
+      "radius": [],
+      "circularityFactor": [],
+      "shutterTime_ms": []
+    },
+    {
+      "trackId": 2,
+      "frameNumber": [
+        0
+      ],
+      "timestamp": [
+        1794035592.389576
+      ],
+      "u": [
+        381.45513916015625
+      ],
+      "v": [
+        334.248779296875
+      ],
+      "radius": [
+        13.915016174316406
+      ],
+      "circularityFactor": [
+        167.0
+      ],
+      "shutterTime_ms": [
+        1.0
+      ]
+    },
+    {
+      "trackId": 3,
+      "frameNumber": [
+        0
+      ],
+      "timestamp": [
+        1794035592.389576
+      ],
+      "u": [
+        0.0
+      ],
+      "v": [
+        0.0
+      ],
+      "radius": [
+        0.0
+      ],
+      "circularityFactor": [
+        0.0
+      ],
+      "shutterTime_ms": [
+        1.0
+      ]
+    },
+    {
+      "trackId": 4,
+      "frameNumber": [
+        0
+      ],
+      "timestamp": [
+        1794035592.488007
+      ],
+      "u": [
+        0.0
+      ],
+      "v": [
+        0.0
+      ],
+      "radius": [
+        1.0
+      ],
+      "circularityFactor": [
+        167.0
+      ],
+      "shutterTime_ms": [
+        1.0
+      ]
+    },
+    {
+      "trackId": 5,
+      "frameNumber": [],
+      "timestamp": [],
+      "u": [],
+      "v": [],
+      "radius": [],
+      "circularityFactor": [],
+      "shutterTime_ms": []
+    },
+    {
+      "trackId": 6,
+      "frameNumber": [
+        0
+      ],
+      "timestamp": [
+        1794035592.389576
+      ],
+      "u": [
+        381.45513916015625
+      ],
+      "v": [
+        334.248779296875
+      ],
+      "radius": [
+        13.915016174316406
+      ],
+      "circularityFactor": [
+        0.9477771520614624
+      ],
+      "shutterTime_ms": [
+        1.0
+      ]
+    },
+    {
+      "trackId": 7,
+      "frameNumber": [],
+      "timestamp": [],
+      "u": [],
+      "v": [],
+      "radius": [],
+      "circularityFactor": [],
+      "shutterTime_ms": []
+    },
+    {
+      "trackId": 8,
+      "frameNumber": [],
+      "timestamp": [],
+      "u": [],
+      "v": [],
+      "radius": [],
+      "circularityFactor": [],
+      "shutterTime_ms": []
+    }
+  ]
+}

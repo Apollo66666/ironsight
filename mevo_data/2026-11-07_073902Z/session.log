@@ -1,0 +1,242 @@
+1794037142.638422 session started; options=Options { device: 192.168.2.1:5100, mode_name: "outdoor", mode: 9, range_mm: 2138, height_mm: 2, output: "C:\\Users\\ZhaoMR\\Desktop\\Code\\ironsight\\mevo_data" }
+1794037145.590086 handshake complete; device=Mevo+ (0x80); dsp=0.43 FS Mevo 2 �?BM17.04; avr=0.39   M2 TR 03 Jun 17 2026 12:21:08; pi=24 2024-05-09 13-30-00
+1794037165.795973 GVP connected; waiting for camera IDLE
+1794037165.798005 radar armed independently of camera availability
+1794037165.806976 GVP status=IDLE
+1794037200.343634 shot 1 trigger guid={6aeed5d0-0000-4145-a550-145ecea00001}
+1794037200.452246 GVP status=TRIGGERED
+1794037200.504541 GVP status=CONVERTING
+1794037200.908405 GVP status=PROCESSING
+1794037201.238660 GVP log level=1: [GVP][2026-11-07 09:40:00.369][276.488/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794037201.274307 GVP log level=1: [GVP][2026-11-07 09:40:00.374][276.488/743.766MB][SimpleObjectTracker] Found 0 club points
+1794037201.383518 shot 1 GVP result saved
+1794037201.417715 GVP status=IDLE
+1794037203.051377 shot 1 radar files saved
+1794037247.030147 shot 2 trigger guid={6aeed5ff-0000-401b-a550-01b769740002}
+1794037247.137873 GVP status=TRIGGERED
+1794037247.288408 GVP status=CONVERTING
+1794037247.720774 GVP status=PROCESSING
+1794037248.022316 GVP log level=1: [GVP][2026-11-07 09:40:47.159][274.516/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794037248.071781 GVP disconnected during camera processing; continuing radar-only
+1794037249.838690 shot 2 radar files saved
+1794037250.321548 GVP reconnect failed: I/O error: connection timed out
+1794037252.573907 GVP reconnect failed: I/O error: connection timed out
+1794037254.824330 GVP reconnect failed: I/O error: connection timed out
+1794037257.077674 GVP reconnect failed: I/O error: connection timed out
+1794037259.329143 GVP reconnect failed: I/O error: connection timed out
+1794037261.581746 GVP reconnect failed: I/O error: connection timed out
+1794037263.834331 GVP reconnect failed: I/O error: connection timed out
+1794037266.086252 GVP reconnect failed: I/O error: connection timed out
+1794037268.338924 GVP reconnect failed: I/O error: connection timed out
+1794037270.591131 GVP reconnect failed: I/O error: connection timed out
+1794037272.843066 GVP reconnect failed: I/O error: connection timed out
+1794037275.095807 GVP reconnect failed: I/O error: connection timed out
+1794037277.349221 GVP reconnect failed: I/O error: connection timed out
+1794037279.601930 GVP reconnect failed: I/O error: connection timed out
+1794037281.856357 GVP reconnect failed: I/O error: connection timed out
+1794037281.965309 shot 3 trigger guid={6aeed621-0000-4397-a550-397549580003}
+1794037284.776817 shot 3 radar files saved
+1794037285.049508 GVP reconnect failed: I/O error: connection timed out
+1794037287.302744 GVP reconnect failed: I/O error: connection timed out
+1794037289.554949 GVP reconnect failed: I/O error: connection timed out
+1794037291.805638 GVP reconnect failed: I/O error: connection timed out
+1794037294.056920 GVP reconnect failed: I/O error: connection timed out
+1794037296.308784 GVP reconnect failed: I/O error: connection timed out
+1794037298.561700 GVP reconnect failed: I/O error: connection timed out
+1794037300.814171 GVP reconnect failed: I/O error: connection timed out
+1794037303.074863 GVP reconnect failed: I/O error: connection timed out
+1794037305.326090 GVP reconnect failed: I/O error: connection timed out
+1794037307.578711 GVP reconnect failed: I/O error: connection timed out
+1794037309.831755 GVP reconnect failed: I/O error: connection timed out
+1794037312.085217 GVP reconnect failed: I/O error: connection timed out
+1794037314.338259 GVP reconnect failed: I/O error: connection timed out
+1794037316.589735 GVP reconnect failed: I/O error: connection timed out
+1794037318.849838 GVP reconnect failed: I/O error: connection timed out
+1794037321.101882 GVP reconnect failed: I/O error: connection timed out
+1794037323.015307 shot 4 trigger guid={6aeed64b-0000-400d-a550-00d5ee040004}
+1794037325.746148 shot 4 radar files saved
+1794037326.000967 GVP reconnect failed: I/O error: connection timed out
+1794037328.253176 GVP reconnect failed: I/O error: connection timed out
+1794037330.506279 GVP reconnect failed: I/O error: connection timed out
+1794037332.758925 GVP reconnect failed: I/O error: connection timed out
+1794037335.011062 GVP reconnect failed: I/O error: connection timed out
+1794037337.263828 GVP reconnect failed: I/O error: connection timed out
+1794037339.515859 GVP reconnect failed: I/O error: connection timed out
+1794037341.769028 GVP reconnect failed: I/O error: connection timed out
+1794037344.020586 GVP reconnect failed: I/O error: connection timed out
+1794037346.272503 GVP reconnect failed: I/O error: connection timed out
+1794037348.523786 GVP reconnect failed: I/O error: connection timed out
+1794037350.777152 GVP reconnect failed: I/O error: connection timed out
+1794037353.029851 GVP reconnect failed: I/O error: connection timed out
+1794037355.281801 GVP reconnect failed: I/O error: connection timed out
+1794037357.535022 GVP reconnect failed: I/O error: connection timed out
+1794037359.786803 GVP reconnect failed: I/O error: connection timed out
+1794037362.039150 GVP reconnect failed: I/O error: connection timed out
+1794037364.290614 GVP reconnect failed: I/O error: connection timed out
+1794037366.549130 GVP reconnect failed: I/O error: connection timed out
+1794037368.802602 GVP reconnect failed: I/O error: connection timed out
+1794037369.505395 shot 5 trigger guid={6aeed679-0000-41e0-a550-1e0c8b680005}
+1794037372.287847 shot 5 radar files saved
+1794037372.566124 GVP reconnect failed: I/O error: connection timed out
+1794037374.819005 GVP reconnect failed: I/O error: connection timed out
+1794037377.085913 GVP reconnect failed: I/O error: connection timed out
+1794037379.337686 GVP reconnect failed: I/O error: connection timed out
+1794037381.590825 GVP reconnect failed: I/O error: connection timed out
+1794037383.842915 GVP reconnect failed: I/O error: connection timed out
+1794037386.094192 GVP reconnect failed: I/O error: connection timed out
+1794037388.347194 GVP reconnect failed: I/O error: connection timed out
+1794037390.599327 GVP reconnect failed: I/O error: connection timed out
+1794037392.865706 GVP reconnect failed: I/O error: connection timed out
+1794037395.118011 GVP reconnect failed: I/O error: connection timed out
+1794037397.370573 GVP reconnect failed: I/O error: connection timed out
+1794037399.623007 GVP reconnect failed: I/O error: connection timed out
+1794037401.875801 GVP reconnect failed: I/O error: connection timed out
+1794037404.128521 GVP reconnect failed: I/O error: connection timed out
+1794037404.673694 shot 6 trigger guid={6aeed69c-0000-4281-a550-281525200006}
+1794037407.593249 shot 6 radar files saved
+1794037407.876627 GVP reconnect failed: I/O error: connection timed out
+1794037410.129550 GVP reconnect failed: I/O error: connection timed out
+1794037412.388209 GVP reconnect failed: I/O error: connection timed out
+1794037414.639827 GVP reconnect failed: I/O error: connection timed out
+1794037416.892600 GVP reconnect failed: I/O error: connection timed out
+1794037419.147366 GVP reconnect failed: I/O error: connection timed out
+1794037421.399332 GVP reconnect failed: I/O error: connection timed out
+1794037423.651004 GVP reconnect failed: I/O error: connection timed out
+1794037425.903869 GVP reconnect failed: I/O error: connection timed out
+1794037428.156679 GVP reconnect failed: I/O error: connection timed out
+1794037430.408579 GVP reconnect failed: I/O error: connection timed out
+1794037432.171182 shot 7 trigger guid={6aeed6b8-0000-40a2-a550-0a2065840007}
+1794037434.921572 shot 7 radar files saved
+1794037435.179396 GVP reconnect failed: I/O error: connection timed out
+1794037437.433279 GVP reconnect failed: I/O error: connection timed out
+1794037439.685218 GVP reconnect failed: I/O error: connection timed out
+1794037441.938350 GVP reconnect failed: I/O error: connection timed out
+1794037444.191434 GVP reconnect failed: I/O error: connection timed out
+1794037446.443068 GVP reconnect failed: I/O error: connection timed out
+1794037448.695728 GVP reconnect failed: I/O error: connection timed out
+1794037450.954785 GVP reconnect failed: I/O error: connection timed out
+1794037453.206544 GVP reconnect failed: I/O error: connection timed out
+1794037455.459470 GVP reconnect failed: I/O error: connection timed out
+1794037457.711320 GVP reconnect failed: I/O error: connection timed out
+1794037459.963007 GVP reconnect failed: I/O error: connection timed out
+1794037459.966934 shot 8 trigger guid={6aeed6d3-0000-4399-a550-3990dac40008}
+1794037462.473175 shot 8 radar files saved
+1794037462.757122 GVP reconnect failed: I/O error: connection timed out
+1794037465.009677 GVP reconnect failed: I/O error: connection timed out
+1794037467.261797 GVP reconnect failed: I/O error: connection timed out
+1794037469.514508 GVP reconnect failed: I/O error: connection timed out
+1794037471.766891 GVP reconnect failed: I/O error: connection timed out
+1794037474.018795 GVP reconnect failed: I/O error: connection timed out
+1794037476.279957 GVP reconnect failed: I/O error: connection timed out
+1794037478.543097 GVP reconnect failed: I/O error: connection timed out
+1794037480.795456 GVP reconnect failed: I/O error: connection timed out
+1794037483.047424 GVP reconnect failed: I/O error: connection timed out
+1794037485.305338 GVP reconnect failed: I/O error: connection timed out
+1794037487.565699 GVP reconnect failed: I/O error: connection timed out
+1794037489.817978 GVP reconnect failed: I/O error: connection timed out
+1794037492.069455 GVP reconnect failed: I/O error: connection timed out
+1794037494.326233 GVP reconnect failed: I/O error: connection timed out
+1794037496.590137 GVP reconnect failed: I/O error: connection timed out
+1794037498.844778 GVP reconnect failed: I/O error: connection timed out
+1794037501.098552 GVP reconnect failed: I/O error: connection timed out
+1794037503.365377 GVP reconnect failed: I/O error: connection timed out
+1794037505.628975 GVP reconnect failed: I/O error: connection timed out
+1794037507.882160 GVP reconnect failed: I/O error: connection timed out
+1794037510.140616 GVP reconnect failed: I/O error: connection timed out
+1794037511.016051 shot 9 trigger guid={6aeed707-0000-400e-a550-00e2ba300009}
+1794037513.750033 shot 9 radar files saved
+1794037514.022628 GVP reconnect failed: I/O error: connection timed out
+1794037516.273921 GVP reconnect failed: I/O error: connection timed out
+1794037518.525400 GVP reconnect failed: I/O error: connection timed out
+1794037520.783465 GVP reconnect failed: I/O error: connection timed out
+1794037523.046208 GVP reconnect failed: I/O error: connection timed out
+1794037525.308319 GVP reconnect failed: I/O error: connection timed out
+1794037527.561474 GVP reconnect failed: I/O error: connection timed out
+1794037529.822053 GVP reconnect failed: I/O error: connection timed out
+1794037532.084947 GVP reconnect failed: I/O error: connection timed out
+1794037534.336527 GVP reconnect failed: I/O error: connection timed out
+1794037536.589374 GVP reconnect failed: I/O error: connection timed out
+1794037538.845198 GVP reconnect failed: I/O error: connection timed out
+1794037541.101636 GVP reconnect failed: I/O error: connection timed out
+1794037543.353337 GVP reconnect failed: I/O error: connection timed out
+1794037545.605510 GVP reconnect failed: I/O error: connection timed out
+1794037546.135547 shot 10 trigger guid={6aeed72a-0000-4080-a550-08096110000a}
+1794037548.896732 shot 10 radar files saved
+1794037549.173470 GVP reconnect failed: I/O error: connection timed out
+1794037551.440581 GVP reconnect failed: I/O error: connection timed out
+1794037553.700248 GVP reconnect failed: I/O error: connection timed out
+1794037555.964169 GVP reconnect failed: I/O error: connection timed out
+1794037558.215887 GVP reconnect failed: I/O error: connection timed out
+1794037560.475920 GVP reconnect failed: I/O error: connection timed out
+1794037562.740056 GVP reconnect failed: I/O error: connection timed out
+1794037564.993159 GVP reconnect failed: I/O error: connection timed out
+1794037567.256663 GVP reconnect failed: I/O error: connection timed out
+1794037569.514655 GVP reconnect failed: I/O error: connection timed out
+1794037571.778546 GVP reconnect failed: I/O error: connection timed out
+1794037574.030217 GVP reconnect failed: I/O error: connection timed out
+1794037576.282121 GVP reconnect failed: I/O error: connection timed out
+1794037576.345004 shot 11 trigger guid={6aeed748-0000-4147-a550-147ce368000b}
+1794037579.081604 shot 11 radar files saved
+1794037579.355070 GVP reconnect failed: I/O error: connection timed out
+1794037581.606992 GVP reconnect failed: I/O error: connection timed out
+1794037583.867456 GVP reconnect failed: I/O error: connection timed out
+1794037586.146728 GVP reconnect failed: I/O error: connection timed out
+1794037588.411566 GVP reconnect failed: I/O error: connection timed out
+1794037590.664616 GVP reconnect failed: I/O error: connection timed out
+1794037592.921716 GVP reconnect failed: I/O error: connection timed out
+1794037595.184945 GVP reconnect failed: I/O error: connection timed out
+1794037597.436661 GVP reconnect failed: I/O error: connection timed out
+1794037599.697301 GVP reconnect failed: I/O error: connection timed out
+1794037601.961350 GVP reconnect failed: I/O error: connection timed out
+1794037604.222768 GVP reconnect failed: I/O error: connection timed out
+1794037604.401137 shot 12 trigger guid={6aeed764-0000-417c-a550-17c9cf04000c}
+1794037607.146958 shot 12 radar files saved
+1794037607.399210 GVP reconnect failed: I/O error: connection timed out
+1794037609.657338 GVP reconnect failed: I/O error: connection timed out
+1794037611.912130 GVP reconnect failed: I/O error: connection timed out
+1794037614.175262 GVP reconnect failed: I/O error: connection timed out
+1794037616.427708 GVP reconnect failed: I/O error: connection timed out
+1794037618.680653 GVP reconnect failed: I/O error: connection timed out
+1794037620.937133 GVP reconnect failed: I/O error: connection timed out
+1794037623.198484 GVP reconnect failed: I/O error: connection timed out
+1794037625.457329 GVP reconnect failed: I/O error: connection timed out
+1794037627.709207 GVP reconnect failed: I/O error: connection timed out
+1794037629.973781 GVP reconnect failed: I/O error: connection timed out
+1794037632.236847 GVP reconnect failed: I/O error: connection timed out
+1794037634.488788 GVP reconnect failed: I/O error: connection timed out
+1794037634.850441 shot 13 trigger guid={6aeed782-0000-4329-a550-329d3d20000d}
+1794037637.658553 shot 13 radar files saved
+1794037637.912834 GVP reconnect failed: I/O error: connection timed out
+1794037640.175709 GVP reconnect failed: I/O error: connection timed out
+1794037642.429195 GVP reconnect failed: I/O error: connection timed out
+1794037644.681298 GVP reconnect failed: I/O error: connection timed out
+1794037646.935089 GVP reconnect failed: I/O error: connection timed out
+1794037649.198737 GVP reconnect failed: I/O error: connection timed out
+1794037651.450519 GVP reconnect failed: I/O error: connection timed out
+1794037653.703062 GVP reconnect failed: I/O error: connection timed out
+1794037655.961073 GVP reconnect failed: I/O error: connection timed out
+1794037658.221879 GVP reconnect failed: I/O error: connection timed out
+1794037660.475268 GVP reconnect failed: I/O error: connection timed out
+1794037661.231888 shot 14 trigger guid={6aeed79d-0000-40db-a550-0dbe8888000e}
+1794037664.023644 shot 14 radar files saved
+1794037664.276584 GVP reconnect failed: I/O error: connection timed out
+1794037666.540135 GVP reconnect failed: I/O error: connection timed out
+1794037668.801277 GVP reconnect failed: I/O error: connection timed out
+1794037671.054627 GVP reconnect failed: I/O error: connection timed out
+1794037673.320925 GVP reconnect failed: I/O error: connection timed out
+1794037675.576932 GVP reconnect failed: I/O error: connection timed out
+1794037677.840360 GVP reconnect failed: I/O error: connection timed out
+1794037680.092157 GVP reconnect failed: I/O error: connection timed out
+1794037682.345582 GVP reconnect failed: I/O error: connection timed out
+1794037684.601029 GVP reconnect failed: I/O error: connection timed out
+1794037686.862889 GVP reconnect failed: I/O error: connection timed out
+1794037689.116103 GVP reconnect failed: I/O error: connection timed out
+1794037691.367522 GVP reconnect failed: I/O error: connection timed out
+1794037693.623604 GVP reconnect failed: I/O error: connection timed out
+1794037695.330172 shot 15 trigger guid={6aeed7bf-0000-4139-a550-139ae8a0000f}
+1794037698.042007 shot 15 radar files saved
+1794037698.324155 GVP reconnect failed: I/O error: connection timed out
+1794037700.587082 GVP reconnect failed: I/O error: connection timed out
+1794037702.839841 GVP reconnect failed: I/O error: connection timed out
+1794037705.101658 GVP reconnect failed: I/O error: connection timed out
+1794037707.364043 GVP reconnect failed: I/O error: connection timed out

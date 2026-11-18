@@ -1,0 +1,15 @@
+{
+  "avrFirmware": "0.39   M2 TR 03 Jun 17 2026 12:21:08",
+  "dspFirmware": "0.43 FS Mevo 2 �QBM17.04",
+  "dspType": 128,
+  "model": "Mevo+",
+  "pcbRevision": 14,
+  "piFirmware": "24 2024-05-09 13-30-00",
+  "productInfo": [
+    "!",
+    "!\bRaspberry Pi,,RasPiCam V2",
+    "!\t,,"
+  ],
+  "schemaVersion": 1,
+  "ssid": "FS M2-060096"
+}

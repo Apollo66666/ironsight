@@ -1,0 +1,14 @@
+Set-Location "$env:C:\Users\ZhaoMR\Desktop\Code\ironsight"
+
+cd C:\Users\ZhaoMR\Desktop\Code\ironsight
+
+ipconfig
+
+Test-NetConnection 192.168.2.1 -Port 5100
+Test-NetConnection 192.168.2.1 -Port 1258
+
+.\target\release\examples\event_loop.exe
+
+.\target\release\examples\gvp_testing.exe
+
+.\target\release\examples\raw_point_export.exe --device 192.168.2.1:5100 --mode outdoor --range-mm 2438 --height-mm 25 --output "C:\Users\ZhaoMR\Desktop\Code\ironsight\mevo_data"

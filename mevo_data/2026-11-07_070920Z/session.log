@@ -1,0 +1,168 @@
+1794035360.414024 session started; options=Options { device: 192.168.2.1:5100, mode_name: "outdoor", mode: 9, range_mm: 2138, height_mm: 2, output: "C:\\Users\\ZhaoMR\\Desktop\\Code\\ironsight\\mevo_data" }
+1794035363.334462 handshake complete; device=Mevo+ (0x80); dsp=0.43 FS Mevo 2 �QBM17.04; avr=0.39   M2 TR 03 Jun 17 2026 12:21:08; pi=24 2024-05-09 13-30-00
+1794035383.512717 GVP connected; waiting for camera IDLE
+1794035383.514475 radar armed independently of camera availability
+1794035383.517636 GVP status=IDLE
+1794035404.564501 shot 1 trigger guid={6aeececc-0000-4219-aa64-2192b1cc0001}
+1794035404.673271 GVP status=TRIGGERED
+1794035404.803246 GVP status=CONVERTING
+1794035405.210720 GVP status=PROCESSING
+1794035405.514058 GVP log level=1: [GVP][2026-11-07 09:10:04.812][295.887/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035405.531311 GVP log level=1: [GVP][2026-11-07 09:10:04.814][295.887/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035405.659928 shot 1 GVP result saved
+1794035405.686830 GVP status=IDLE
+1794035407.535955 shot 1 radar files saved
+1794035433.898256 shot 2 trigger guid={6aeecee9-0000-4357-aa64-357779c00002}
+1794035434.008953 GVP status=TRIGGERED
+1794035434.200139 GVP status=CONVERTING
+1794035434.558696 GVP status=PROCESSING
+1794035434.862262 GVP log level=1: [GVP][2026-11-07 09:10:34.161][294.641/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035434.875964 GVP log level=1: [GVP][2026-11-07 09:10:34.165][294.641/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035434.996349 shot 2 GVP result saved
+1794035435.018545 GVP status=IDLE
+1794035436.739858 shot 2 radar files saved
+1794035452.717528 shot 3 trigger guid={6aeecefc-0000-42ab-aa64-2ab262840003}
+1794035452.825742 GVP status=TRIGGERED
+1794035453.000089 GVP status=CONVERTING
+1794035453.383291 GVP status=PROCESSING
+1794035453.679273 GVP log level=1: [GVP][2026-11-07 09:10:52.980][296.496/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035453.823220 GVP log level=1: [GVP][2026-11-07 09:10:52.982][296.496/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035453.915342 shot 3 GVP result saved
+1794035453.937682 GVP status=IDLE
+1794035455.565069 shot 3 radar files saved
+1794035487.962372 shot 4 trigger guid={6aeecf1f-0000-4394-aa64-3948c5400004}
+1794035488.071148 GVP status=TRIGGERED
+1794035488.198228 GVP status=CONVERTING
+1794035488.555460 GVP status=PROCESSING
+1794035488.884341 GVP log level=1: [GVP][2026-11-07 09:11:28.188][294.035/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035488.898987 GVP log level=1: [GVP][2026-11-07 09:11:28.193][294.035/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035489.017665 shot 4 GVP result saved
+1794035489.051750 GVP status=IDLE
+1794035490.708687 shot 4 radar files saved
+1794035508.850744 shot 5 trigger guid={6aeecf34-0000-4329-aa64-329d59a40005}
+1794035508.958589 GVP status=TRIGGERED
+1794035509.097883 GVP status=CONVERTING
+1794035509.488255 GVP status=PROCESSING
+1794035509.796505 GVP log level=1: [GVP][2026-11-07 09:11:49.102][296.328/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035509.814539 GVP log level=1: [GVP][2026-11-07 09:11:49.107][296.328/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035509.921173 shot 5 GVP result saved
+1794035509.943425 GVP status=IDLE
+1794035511.914719 shot 5 radar files saved
+1794035529.946197 shot 6 trigger guid={6aeecf49-0000-4385-aa64-38523fe00006}
+1794035530.055982 GVP status=TRIGGERED
+1794035530.193676 GVP status=CONVERTING
+1794035530.579705 GVP status=PROCESSING
+1794035530.896961 GVP log level=1: [GVP][2026-11-07 09:12:10.201][297.219/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035530.917132 GVP log level=1: [GVP][2026-11-07 09:12:10.203][297.219/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035531.029755 shot 6 GVP result saved
+1794035531.052860 GVP status=IDLE
+1794035532.741671 shot 6 radar files saved
+1794035574.078199 shot 7 trigger guid={6aeecf76-0000-4049-aa64-0495f5340007}
+1794035574.187180 GVP status=TRIGGERED
+1794035574.292177 GVP status=CONVERTING
+1794035574.699069 GVP status=PROCESSING
+1794035575.010633 GVP log level=1: [GVP][2026-11-07 09:12:54.318][294.664/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035575.023104 GVP log level=1: [GVP][2026-11-07 09:12:54.321][294.664/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035575.111734 shot 7 GVP result saved
+1794035575.136851 GVP status=IDLE
+1794035576.883092 shot 7 radar files saved
+1794035593.329313 shot 8 trigger guid={6aeecf89-0000-4138-aa64-138c0fd80008}
+1794035593.438662 GVP status=TRIGGERED
+1794035593.491224 GVP status=CONVERTING
+1794035593.922222 GVP status=PROCESSING
+1794035594.212606 GVP log level=1: [GVP][2026-11-07 09:13:13.522][294.883/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035594.230384 GVP log level=1: [GVP][2026-11-07 09:13:13.528][294.883/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035594.347672 shot 8 GVP result saved
+1794035594.373837 GVP status=IDLE
+1794035596.125617 shot 8 radar files saved
+1794035615.958833 shot 9 trigger guid={6aeecf9f-0000-4391-aa64-3911c4c80009}
+1794035616.067975 GVP status=TRIGGERED
+1794035616.189694 GVP status=CONVERTING
+1794035616.575197 GVP status=PROCESSING
+1794035616.861334 GVP log level=1: [GVP][2026-11-07 09:13:36.171][299.41/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035616.879107 GVP log level=1: [GVP][2026-11-07 09:13:36.172][299.41/743.766MB][SimpleObjectTracker] Found 0 club points
+1794035616.999720 shot 9 GVP result saved
+1794035617.139449 GVP status=IDLE
+1794035618.733973 shot 9 radar files saved
+1794035646.881852 shot 10 trigger guid={6aeecfbe-0000-4347-aa64-347b6cc0000a}
+1794035646.989826 GVP status=TRIGGERED
+1794035647.187325 GVP status=CONVERTING
+1794035647.552975 GVP status=PROCESSING
+1794035648.333281 shot 10 GVP result saved
+1794035648.357740 GVP status=IDLE
+1794035649.698789 shot 10 radar files saved
+1794035661.319676 shot 11 trigger guid={6aeecfcd-0000-412f-aa64-12fa2c94000b}
+1794035661.428479 GVP status=TRIGGERED
+1794035661.590683 GVP status=CONVERTING
+1794035661.973199 GVP status=PROCESSING
+1794035662.296338 GVP log level=1: [GVP][2026-11-07 09:14:21.609][298.035/743.766MB][SimpleObjectTracker] Found 0 ball points
+1794035662.335960 GVP disconnected during camera processing; continuing radar-only
+1794035664.086203 shot 11 radar files saved
+1794035664.598260 GVP reconnect failed: I/O error: connection timed out
+1794035666.864742 GVP reconnect failed: I/O error: connection timed out
+1794035669.117040 GVP reconnect failed: I/O error: connection timed out
+1794035671.380392 GVP reconnect failed: I/O error: connection timed out
+1794035673.643623 GVP reconnect failed: I/O error: connection timed out
+1794035675.908049 GVP reconnect failed: I/O error: connection timed out
+1794035678.160198 GVP reconnect failed: I/O error: connection timed out
+1794035680.413122 GVP reconnect failed: I/O error: connection timed out
+1794035682.670324 GVP reconnect failed: I/O error: connection timed out
+1794035684.050196 shot 12 trigger guid={6aeecfe4-0000-402e-aa64-02ecdb08000c}
+1794035686.807239 shot 12 radar files saved
+1794035687.085072 GVP reconnect failed: I/O error: connection timed out
+1794035689.337820 GVP reconnect failed: I/O error: connection timed out
+1794035691.604793 GVP reconnect failed: I/O error: connection timed out
+1794035693.867583 GVP reconnect failed: I/O error: connection timed out
+1794035696.130150 GVP reconnect failed: I/O error: connection timed out
+1794035698.381229 GVP reconnect failed: I/O error: connection timed out
+1794035700.648482 GVP reconnect failed: I/O error: connection timed out
+1794035702.912745 GVP reconnect failed: I/O error: connection timed out
+1794035704.202633 shot 13 trigger guid={6aeecff8-0000-40bf-aa64-0bff0dd8000d}
+1794035706.958256 shot 13 radar files saved
+1794035707.231809 GVP reconnect failed: I/O error: connection timed out
+1794035709.484933 GVP reconnect failed: I/O error: connection timed out
+1794035711.748313 GVP reconnect failed: I/O error: connection timed out
+1794035714.012702 GVP reconnect failed: I/O error: connection timed out
+1794035716.270075 GVP reconnect failed: I/O error: connection timed out
+1794035718.523019 GVP reconnect failed: I/O error: connection timed out
+1794035720.787894 GVP reconnect failed: I/O error: connection timed out
+1794035723.053374 GVP reconnect failed: I/O error: connection timed out
+1794035725.305447 GVP reconnect failed: I/O error: connection timed out
+1794035727.570675 GVP reconnect failed: I/O error: connection timed out
+1794035729.835875 GVP reconnect failed: I/O error: connection timed out
+1794035731.152838 shot 14 trigger guid={6aeed013-0000-4090-aa64-090877cc000e}
+1794035733.923532 shot 14 radar files saved
+1794035734.192549 GVP reconnect failed: I/O error: connection timed out
+1794035736.444504 GVP reconnect failed: I/O error: connection timed out
+1794035738.703061 GVP reconnect failed: I/O error: connection timed out
+1794035740.964233 GVP reconnect failed: I/O error: connection timed out
+1794035743.222068 GVP reconnect failed: I/O error: connection timed out
+1794035745.475451 GVP reconnect failed: I/O error: connection timed out
+1794035747.729289 GVP reconnect failed: I/O error: connection timed out
+1794035749.987167 GVP reconnect failed: I/O error: connection timed out
+1794035752.250174 GVP reconnect failed: I/O error: connection timed out
+1794035754.503178 GVP reconnect failed: I/O error: connection timed out
+1794035756.758422 GVP reconnect failed: I/O error: connection timed out
+1794035759.010789 GVP reconnect failed: I/O error: connection timed out
+1794035761.264091 GVP reconnect failed: I/O error: connection timed out
+1794035763.516426 GVP reconnect failed: I/O error: connection timed out
+1794035765.770149 GVP reconnect failed: I/O error: connection timed out
+1794035768.034095 GVP reconnect failed: I/O error: connection timed out
+1794035770.285465 GVP reconnect failed: I/O error: connection timed out
+1794035772.537348 GVP reconnect failed: I/O error: connection timed out
+1794035774.793462 GVP reconnect failed: I/O error: connection timed out
+1794035777.057191 GVP reconnect failed: I/O error: connection timed out
+1794035779.308929 GVP reconnect failed: I/O error: connection timed out
+1794035781.561223 GVP reconnect failed: I/O error: connection timed out
+1794035783.817564 GVP reconnect failed: I/O error: connection timed out
+1794035786.079949 GVP reconnect failed: I/O error: connection timed out
+1794035788.331483 GVP reconnect failed: I/O error: connection timed out
+1794035790.582472 GVP reconnect failed: I/O error: connection timed out
+1794035792.840322 GVP reconnect failed: I/O error: connection timed out
+1794035792.854774 shot 15 trigger guid={6aeed050-0000-432e-aa64-32e27250000f}
+1794035795.653619 shot 15 radar files saved
+1794035795.907953 GVP reconnect failed: I/O error: connection timed out
+1794035798.169023 GVP reconnect failed: I/O error: connection timed out
+1794035800.431926 GVP reconnect failed: I/O error: connection timed out
+1794035802.684321 GVP reconnect failed: I/O error: connection timed out
+1794035804.936891 GVP reconnect failed: I/O error: connection timed out
